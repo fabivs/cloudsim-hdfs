@@ -72,7 +72,7 @@ public class CloudSimExample1 {
 			 * the shutdownId (whose default value was -1) is 0    
 			 * Once initCommonVariable() returns (note that we are in method init() now), a CloudInformationService (which is also derived from SimEntity) instance is created 
 			 * (with its name as CloudInformatinService, id as -1, and state as RUNNABLE). Then this new entity is also added to the simulation. 
-			 * While being added to the simulation, the id of the SimEntitiy is changed to 1 (which is the next id) from its earlier value of -1. 
+			 * While being added to the simulation, the id of the SimEntity is changed to 1 (which is the next id) from its earlier value of -1.
 			 * The two collections - entities and entitiesByName are updated with this SimEntity.
 			 * the cisId(whose default value is -1) is 1
 			 * Comment End - Dinesh Bhagwat 
@@ -81,7 +81,7 @@ public class CloudSimExample1 {
 
 			// Second step: Create Datacenters
 			// Datacenters are the resource providers in CloudSim. We need at
-			// list one of them to run a CloudSim simulation
+			// least one of them to run a CloudSim simulation
 			Datacenter datacenter0 = createDatacenter("Datacenter_0");
 
 			// Third step: Create Broker
@@ -98,7 +98,7 @@ public class CloudSimExample1 {
 			int ram = 512; // vm memory (MB)
 			long bw = 1000;
 			int pesNumber = 1; // number of cpus
-			String vmm = "Xen"; // VMM name
+			String vmm = "Xen"; // VMM (Virtual Machine Monitor) name
 
 			// create VM
 			Vm vm = new Vm(vmid, brokerId, mips, pesNumber, ram, bw, size, vmm, new CloudletSchedulerTimeShared());
@@ -114,9 +114,9 @@ public class CloudSimExample1 {
 
 			// Cloudlet properties
 			int id = 0;
-			long length = 400000;
-			long fileSize = 300;
-			long outputSize = 300;
+			long length = 400000; // numero di istruzioni
+			long fileSize = 300; // questo è quello che andrei a usare per un blocco di HDFS
+			long outputSize = 300; // il size del cloudlet dopo l'execution
 			UtilizationModel utilizationModel = new UtilizationModelFull();
 
 			Cloudlet cloudlet = 
@@ -124,7 +124,7 @@ public class CloudSimExample1 {
                                         outputSize, utilizationModel, utilizationModel, 
                                         utilizationModel);
 			cloudlet.setUserId(brokerId);
-			cloudlet.setVmId(vmid);
+			cloudlet.setVmId(vmid); // NOTA: ogni cloudlet è già associato a una VM
 
 			// add the cloudlet to the list
 			cloudletList.add(cloudlet);
@@ -138,7 +138,7 @@ public class CloudSimExample1 {
 			CloudSim.stopSimulation();
 
 			//Final step: Print results when simulation is over
-			List<Cloudlet> newList = broker.getCloudletReceivedList();
+			List<Cloudlet> newList = broker.getCloudletReceivedList(); // la lista di Cloudlets ricevuti dal broker
 			printCloudletList(newList);
 
 			Log.printLine("CloudSimExample1 finished!");
