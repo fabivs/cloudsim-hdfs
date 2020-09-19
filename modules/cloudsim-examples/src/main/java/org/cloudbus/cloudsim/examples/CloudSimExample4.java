@@ -176,6 +176,8 @@ public class CloudSimExample4 {
 
 		//in this example, the VMAllocatonPolicy in use is SpaceShared. It means that only one VM
 		//is allowed to run on each Pe. As each Host has only one Pe, only one VM can run on each Host.
+		//IMPORTANTISSIMO!! altrimenti non si spiega perchè l'allocazione della seconda VM fallisce
+		//quindi nota come se anche se nel log dice "failed by MIPS", il vero motivo è questo
 		hostList.add(
     			new Host(
     				hostId,
@@ -185,7 +187,7 @@ public class CloudSimExample4 {
     				peList,
     				new VmSchedulerSpaceShared(peList)
     			)
-    		); // This is our first machine
+    		); // This is our first machine, un solo host, però ricorda che creiamo due datacenters
 
 		// 5. Create a DatacenterCharacteristics object that stores the
 		//    properties of a data center: architecture, OS, list of

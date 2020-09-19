@@ -181,6 +181,7 @@ public class CloudSimExample5 {
 
 		//in this example, the VMAllocatonPolicy in use is SpaceShared. It means that only one VM
 		//is allowed to run on each Pe. As each Host has only one Pe, only one VM can run on each Host.
+		// ^ sempre IMPORTANTISSIMO!!
 		hostList.add(
     			new Host(
     				hostId,

@@ -64,7 +64,7 @@ public class CloudSimExample3 {
 			// before creating any entities.
 			int num_user = 1;   // number of cloud users
 			Calendar calendar = Calendar.getInstance();
-			boolean trace_flag = false;  // mean trace events
+			boolean trace_flag = false;  // means trace events
 
 			// Initialize the CloudSim library
 			CloudSim.init(num_user, calendar, trace_flag);
@@ -93,7 +93,7 @@ public class CloudSimExample3 {
 			//create two VMs
 			Vm vm1 = new Vm(vmid, brokerId, mips, pesNumber, ram, bw, size, vmm, new CloudletSchedulerTimeShared());
 
-			//the second VM will have twice the priority of VM1 and so will receive twice CPU time
+			//the second VM will have twice the priority of VM1 and so it will receive twice the CPU time
 			vmid++;
 			Vm vm2 = new Vm(vmid, brokerId, mips * 2, pesNumber, ram, bw, size, vmm, new CloudletSchedulerTimeShared());
 
@@ -108,7 +108,7 @@ public class CloudSimExample3 {
 			//Fifth step: Create two Cloudlets
 			cloudletList = new ArrayList<Cloudlet>();
 
-			//Cloudlet properties
+			//Cloudlet properties, nota che i cloudlets sono identici, a differenza delle VMs
 			int id = 0;
 			long length = 40000;
 			long fileSize = 300;
@@ -190,8 +190,13 @@ public class CloudSimExample3 {
 		//create another machine in the Data center
 		List<Pe> peList2 = new ArrayList<Pe>();
 
+		/*
+		 ovviamente bisogna creare una nuova peList e aggiungerci un nuovo PE,
+		 nota che non fa niente che l'id è sempre 0, probabilmente perchè è relativo al singolo host
+		*/
 		peList2.add(new Pe(0, new PeProvisionerSimple(mips)));
 
+		// il nuovo host ovviamente non può avere lo stesso id
 		hostId++;
 
 		hostList.add(
