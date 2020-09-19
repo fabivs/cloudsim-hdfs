@@ -64,13 +64,13 @@ public class CloudSimExample2 {
 	            	// before creating any entities.
 	            	int num_user = 1;   // number of cloud users
 	            	Calendar calendar = Calendar.getInstance();
-	            	boolean trace_flag = false;  // mean trace events
+	            	boolean trace_flag = false;  // means trace events
 
 	            	// Initialize the CloudSim library
 	            	CloudSim.init(num_user, calendar, trace_flag);
 
 	            	// Second step: Create Datacenters
-	            	//Datacenters are the resource providers in CloudSim. We need at list one of them to run a CloudSim simulation
+	            	// Datacenters are the resource providers in CloudSim. We need at least one of them to run a CloudSim simulation
 	            	@SuppressWarnings("unused")
 					Datacenter datacenter0 = createDatacenter("Datacenter_0");
 
@@ -81,7 +81,7 @@ public class CloudSimExample2 {
 	            	//Fourth step: Create one virtual machine
 	            	vmlist = new ArrayList<Vm>();
 
-	            	//VM description
+	            	//VM description, le due vm avranno le stesse identiche caratteristiche
 	            	int vmid = 0;
 	            	int mips = 250;
 	            	long size = 10000; //image size (MB)
@@ -93,7 +93,7 @@ public class CloudSimExample2 {
 	            	//create two VMs
 	            	Vm vm1 = new Vm(vmid, brokerId, mips, pesNumber, ram, bw, size, vmm, new CloudletSchedulerTimeShared());
 
-	            	vmid++;
+	            	vmid++; // NOTA: va ovviamente cambiato l'id per creare un'altra vm
 	            	Vm vm2 = new Vm(vmid, brokerId, mips, pesNumber, ram, bw, size, vmm, new CloudletSchedulerTimeShared());
 
 	            	//add the VMs to the vmList
@@ -107,18 +107,18 @@ public class CloudSimExample2 {
 	            	//Fifth step: Create two Cloudlets
 	            	cloudletList = new ArrayList<Cloudlet>();
 
-	            	//Cloudlet properties
+	            	//Cloudlet properties, again, entrambi i cloudlets avranno le stesse caratteristiche
 	            	int id = 0;
 	            	pesNumber=1;
-	            	long length = 250000;
+	            	long length = 250000; // number of instructions
 	            	long fileSize = 300;
 	            	long outputSize = 300;
-	            	UtilizationModel utilizationModel = new UtilizationModelFull();
+	            	UtilizationModel utilizationModel = new UtilizationModelFull(); // usiamo lo stesso utilizationModel per cpu, storage, bw
 
 	            	Cloudlet cloudlet1 = new Cloudlet(id, length, pesNumber, fileSize, outputSize, utilizationModel, utilizationModel, utilizationModel);
 	            	cloudlet1.setUserId(brokerId);
 
-	            	id++;
+	            	id++; // again, l'id non può essere lo stesso
 	            	Cloudlet cloudlet2 = new Cloudlet(id, length, pesNumber, fileSize, outputSize, utilizationModel, utilizationModel, utilizationModel);
 	            	cloudlet2.setUserId(brokerId);
 
@@ -165,7 +165,7 @@ public class CloudSimExample2 {
 	    	// In this example, it will have only one core.
 	    	List<Pe> peList = new ArrayList<Pe>();
 
-	    	int mips = 1000;
+	    	int mips = 1000; // abbiamo due VMs che richiedono entrambe 250 mips di power, quindi non c'è nessun bottleneck
 
 	        // 3. Create PEs and add these into a list.
 	    	peList.add(new Pe(0, new PeProvisionerSimple(mips))); // need to store Pe id and MIPS Rating

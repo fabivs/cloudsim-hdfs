@@ -159,14 +159,14 @@ public class CloudSimExample1 {
 
 		// Here are the steps needed to create a PowerDatacenter:
 		// 1. We need to create a list to store
-		// our machine
+		// our machines
 		List<Host> hostList = new ArrayList<Host>();
 
 		// 2. A Machine contains one or more PEs or CPUs/Cores.
 		// In this example, it will have only one core.
 		List<Pe> peList = new ArrayList<Pe>();
 
-		int mips = 1000;
+		int mips = 1000;  // CPU horsepower
 
 		// 3. Create PEs and add these into a list.
 		peList.add(new Pe(0, new PeProvisionerSimple(mips))); // need to store Pe id and MIPS Rating
@@ -176,7 +176,7 @@ public class CloudSimExample1 {
 		int hostId = 0;
 		int ram = 2048; // host memory (MB)
 		long storage = 1000000; // host storage
-		int bw = 10000;
+		int bw = 10000; // network bandwidth
 
 		hostList.add(
 			new Host(
