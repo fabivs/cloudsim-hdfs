@@ -47,6 +47,7 @@ public class CloudSimExample6 {
 	/** The vmlist. */
 	private static List<Vm> vmlist;
 
+	// un metodo che crea tante vms quanto indicato dall'int "vms" passato (usato nel ciclo for)
 	private static List<Vm> createVM(int userId, int vms) {
 
 		//Creates a container to store VMs. This list is passed to the broker later
@@ -63,9 +64,11 @@ public class CloudSimExample6 {
 		//create VMs
 		Vm[] vm = new Vm[vms];
 
+		// funziona così: vm è un array di dimensione "vms", nel ciclo riempiamo questo array di tante nuove vm,
+		// ognuna di queste vm è anche aggiunta alla lista "list", che è ritornata alla fine, fuori dal ciclo
 		for(int i=0;i<vms;i++){
 			vm[i] = new Vm(i, userId, mips, pesNumber, ram, bw, size, vmm, new CloudletSchedulerTimeShared());
-			//for creating a VM with a space shared scheduling policy for cloudlets:
+			//to create a VM with a space shared scheduling policy for cloudlets:
 			//vm[i] = Vm(i, userId, mips, pesNumber, ram, bw, size, priority, vmm, new CloudletSchedulerSpaceShared());
 
 			list.add(vm[i]);
@@ -75,6 +78,7 @@ public class CloudSimExample6 {
 	}
 
 
+	// analogo al metodo delle vms, ma per i cloudlets
 	private static List<Cloudlet> createCloudlet(int userId, int cloudlets){
 		// Creates a container to store Cloudlets
 		LinkedList<Cloudlet> list = new LinkedList<Cloudlet>();
