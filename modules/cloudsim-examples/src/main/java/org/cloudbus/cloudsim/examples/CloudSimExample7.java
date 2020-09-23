@@ -48,6 +48,7 @@ public class CloudSimExample7 {
 	/** The vmlist. */
 	private static List<Vm> vmlist;
 
+	// rispetto all'esempio precedente c'è un idShift che è il valore da cui partono gli ids delle vm create
 	private static List<Vm> createVM(int userId, int vms, int idShift) {
 		//Creates a container to store VMs. This list is passed to the broker later
 		LinkedList<Vm> list = new LinkedList<Vm>();
@@ -136,7 +137,10 @@ public class CloudSimExample7 {
 			Runnable monitor = new Runnable() {
 				@Override
 				public void run() {
+					// questo metodo pausa la simulazione al tempo 200 (ATTENZIONE: NON PER 200 clock ticks, ma AL TEMPO 200)
 					CloudSim.pauseSimulation(200);
+
+					// e finchè la pausa non avviene, questo thread è in sleep
 					while (true) {
 						if (CloudSim.isPaused()) {
 							break;
@@ -148,6 +152,9 @@ public class CloudSimExample7 {
 						}
 					}
 
+					// quando arriviamo al tempo 200 la simulazione è in pausa e viene eseguito il codice seguente
+					// questa pausa di 5 sec effettivamente non serve a niente se non per farti vedere in real time,
+					// mentre esegui il codice, cosa sta succedendo
 					Log.printLine("\n\n\n" + CloudSim.clock() + ": The simulation is paused for 5 sec \n\n");
 
 					try {
@@ -155,6 +162,8 @@ public class CloudSimExample7 {
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
+
+					// tutto questo viene fatto DOPO la pausa di 5 secondi, la simulazione è ancora in pausa
 
 					DatacenterBroker broker = createBroker("Broker_1");
 					int brokerId = broker.getId();
@@ -166,18 +175,29 @@ public class CloudSimExample7 {
 					broker.submitVmList(vmlist);
 					broker.submitCloudletList(cloudletList);
 
+					// ricorda che finchè la simulazione non riparte, il broker non viene effettivamente creato!
 					CloudSim.resumeSimulation();
 				}
 			};
 
 			new Thread(monitor).start();
+			// mette il main thread on sleep per far avviare il secondo thread prima che inizi la simulazione
+
 			Thread.sleep(1000);
+
+			// NOTA CHE FINO A CHE NON VIENE ESEGUITO "startSimulation" STIAMO SOLO DICHIARANDO COSE!!
+			// I Datacenters, Broker, etc etc viene tutto effettivamente creato quando parte "startSimulation"
 
 			// Fifth step: Starts the simulation
 			CloudSim.startSimulation();
 
 			// Final step: Print results when simulation is over
 			List<Cloudlet> newList = broker.getCloudletReceivedList();
+
+			// NOTA: l'unico problema è che non vengono ritornati i risultati del secondo broker,
+			// basta mettere una sleep qui prima che la simulazione termini, una well timed sleep nell'altro thread
+			// in modo che aspetti poco prima della fine simulazione, e prima del termine fare stampare anche a lui
+			// i risultati del proprio broker, ma non volevo rovinare il codice con random sleeps e bullshit
 
 			CloudSim.stopSimulation();
 
