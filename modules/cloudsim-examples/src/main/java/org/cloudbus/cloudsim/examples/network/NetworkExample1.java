@@ -38,7 +38,7 @@ import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
 /**
  * A simple example showing how to create
  * a datacenter with one host and a network
- * topology and and run one cloudlet on it.
+ * topology and run one cloudlet on it.
  */
 public class NetworkExample1 {
 

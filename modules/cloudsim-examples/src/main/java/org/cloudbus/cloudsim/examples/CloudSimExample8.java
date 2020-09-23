@@ -116,6 +116,7 @@ public class CloudSimExample8 {
 			// Initialize the CloudSim library
 			CloudSim.init(num_user, calendar, trace_flag);
 
+			// questo è uno step in più rispetto agli esempi passati
 			GlobalBroker globalBroker = new GlobalBroker("GlobalBroker");
 
 			// Second step: Create Datacenters
@@ -140,6 +141,7 @@ public class CloudSimExample8 {
 			CloudSim.startSimulation();
 
 			// Final step: Print results when simulation is over
+			// abbiamo la lista dei received cloudlets del primo broker, a cui puoi è concatenata quella del globalBroker
 			List<Cloudlet> newList = broker.getCloudletReceivedList();
 			newList.addAll(globalBroker.getBroker().getCloudletReceivedList());
 
@@ -303,6 +305,7 @@ public class CloudSimExample8 {
 			case CREATE_BROKER:
 				setBroker(createBroker(super.getName()+"_"));
 
+				// quando questo global broker itself viene creato, viene anche eseguito questo codice seguente
 				//Create VMs and Cloudlets and send them to broker
 				setVmList(createVM(getBroker().getId(), 5, 100)); //creating 5 vms
 				setCloudletList(createCloudlet(getBroker().getId(), 10, 100)); // creating 10 cloudlets
@@ -320,6 +323,7 @@ public class CloudSimExample8 {
 			}
 		}
 
+		// questo è quello che avviene quando la simulazione avvia questo broker
 		@Override
 		public void startEntity() {
 			Log.printLine(super.getName()+" is starting...");
