@@ -38,7 +38,7 @@ import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
 
 /**
  * A simple example showing how to create
- * two datacenters with one host and a
+ * two datacenters with one host each and a
  * network topology each and run two cloudlets
  * on them.
  */
