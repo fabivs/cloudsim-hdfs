@@ -66,7 +66,7 @@ public class HdfsExample1 {
 
 
 	// analogo al metodo delle vms, ma per i cloudlets
-	private static List<Cloudlet> createCloudlet(int userId, int cloudlets){
+	private static List<Cloudlet> createCloudletList(int userId, int cloudletCount){
 		// Creates a container to store Cloudlets
 		LinkedList<Cloudlet> list = new LinkedList<Cloudlet>();
 
@@ -77,9 +77,9 @@ public class HdfsExample1 {
 		int pesNumber = 1;
 		UtilizationModel utilizationModel = new UtilizationModelFull();
 
-		Cloudlet[] cloudlet = new Cloudlet[cloudlets];
+		Cloudlet[] cloudlet = new Cloudlet[cloudletCount];
 
-		for(int i=0;i<cloudlets;i++){
+		for(int i=0;i<cloudletCount;i++){
 			cloudlet[i] = new Cloudlet(i, length, pesNumber, fileSize, outputSize, utilizationModel, utilizationModel, utilizationModel);
 			// setting the owner of these Cloudlets
 			cloudlet[i].setUserId(userId);
@@ -89,6 +89,12 @@ public class HdfsExample1 {
 		return list;
 	}
 
+	/*
+	// metodo per creare un singolo Cloudlet
+	private static Cloudlet createCloudlet(){
+		return null;
+	}
+	*/
 
 	////////////////////////// STATIC METHODS ///////////////////////
 
@@ -96,7 +102,7 @@ public class HdfsExample1 {
 	 * Creates main() to run this example
 	 */
 	public static void main(String[] args) {
-		Log.printLine("Starting CloudSimExample6...");
+		Log.printLine("Starting Hdfs Example 1...");
 
 		try {
 			// First step: Initialize the CloudSim package. It should be called
@@ -120,8 +126,8 @@ public class HdfsExample1 {
 			int brokerId = broker.getId();
 
 			//Fourth step: Create VMs and Cloudlets and send them to broker
-			vmlist = createVM(brokerId,20); //creating 20 vms
-			cloudletList = createCloudlet(brokerId,40); // creating 40 cloudlets
+			vmlist = createVM(brokerId,4); //creating 20 vms
+			cloudletList = createCloudletList(brokerId,8); // creating 40 cloudlets
 
 			broker.submitVmList(vmlist);
 			broker.submitCloudletList(cloudletList);

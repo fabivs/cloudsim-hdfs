@@ -5,7 +5,9 @@ import org.cloudbus.cloudsim.provisioners.RamProvisioner;
 
 import java.util.List;
 
-// HdfsHost usa la class HarddriveStorage, già presente in Cloudsim, per lo storage
+// IL PROBLEMA ORA È EFFETTIVAMENTE USARE QUESTO HarddriveStorage nella simulazione!!
+
+// HdfsHost usa la class HarddriveStorage, già presente in Cloudsim, per simulare lo storage
 // Un normale Host usa un semplice "long" per tenere traccia dello storage
 
 public class HdfsHost extends Host{
@@ -19,6 +21,7 @@ public class HdfsHost extends Host{
      * @param ramProvisioner the ram provisioner
      * @param bwProvisioner  the bw provisioner
      * @param storage        the storage capacity
+     * @param hddStorage     the simulated hard drive (should make "storage" redundant)
      * @param peList         the host's PEs list
      * @param vmScheduler    the vm scheduler
      */
