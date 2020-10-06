@@ -1,0 +1,32 @@
+// NOTE SUL PROGETTO
+
+- Al momento ho creato un HDFS Broker, che in "submitCloudlets()" invece che inviare i cloudlets col tag
+CLOUDLET_SUBMIT, usa un nuovo tag DATA_CLOUDLET_SUBMIT, questi cloudlets, con il nuovo tag, sono inviati al Datacenter
+
+- Ho anche creato un nuovo HDFS Datacenter, in cui ho aggiunto il case-switch relativo ai due nuovi tags
+(DATA_CLOUDLET_SUBMIT e DATA_CLOUDLET_SUBMIT_ACK) e ho aggiunto quindi un nuovo metodo che viene chiamato quando arriva
+un evento con questi tags, il metodo si chiama "processDataCloudletSubmit()".
+
+TODO RIGHT NOW: scrivere il codice appropriato in processDataCloudletSubmit()
+
+Il metodo deve ora eseguire il codice relativo al Cloudlet di file transfer!
+
+Per quanto riguarda il file associato al Cloudlet, la cosa migliore dovrebbe essere usare il field "requiredFiles" che
+è già all'interno della classe Cloudlet:
+- la VM del client legge il requiredFile dal proprio disco, dopodichè lo invia alla VM del Data Node
+- la VM del Data Node riceve il file (e penso dovrà ricevere anche un nuovo cloudlet...) dalla VM del client e lo scrive
+su disco.
+
+Penso abbia senso che sia la VM del client stesso a inviare alla VM del DN un cloudlet per quanto riguarda la scrittura
+del file, ma non so se sarà possibile farlo, nel caso glielo dovesse mandare il broker non è la fine del mondo, perchè
+alla fine dato che il broker è una simulazione del comportamento del client, lo posso bindare allo stesso nodo della VM
+del client nella topologia, e quindi ha senso che sia lui a inviare il cloudlet alla sua stessa vm, senza delay, e poi
+dopo aver letto il file, invia l'altro cloudlet al Data Node, questo cloudlet dovrebbe riguardare la ricezione e
+scrittura del file.
+
+Per quanto riguarda la simulazione del file transfer tramite rete, sono certo che in Cloudsim è già implementata, perchè
+quando viene settata una topology per i nodi, tenendo conto del fatto che i Cloudlets hanno un file size in input e
+anche uno di output (per quando ritornano indietro al broker) c'è un delay nell'invio e nella ricezione del cloudlet
+tra broker e client, quindi la simulazione del carico della rete per un file transfer esiste già, devo capire come fare
+per sfruttarla io per i miei scopi, ossia inviare questo hdfs block tramite rete, e magari anche ricevere un ack
+(non so se in hdfs c'è l'ack che viene rimandato indietro, ma suppongo di si).
