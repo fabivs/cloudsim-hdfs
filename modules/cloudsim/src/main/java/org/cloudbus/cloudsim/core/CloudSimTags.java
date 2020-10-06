@@ -272,6 +272,16 @@ public class CloudSimTags {
 
 	public static final int NextCycle = BASE + 48;
 
+	/**
+	 * TAGS AGGIUNTI DA ME
+	 */
+
+	// Denotes the submission of a Data Cloudlet (to initiate a file transfer)
+	public static final int DATA_CLOUDLET_SUBMIT = BASE + 49;
+
+	// Denotes the submition of a Data Cloudlet Acknowledgement (l'ack di conferma che torna indietro)
+	public static final int DATA_CLOUDLET_SUBMIT_ACK = BASE + 50;
+
 	/** Private Constructor. */
 	private CloudSimTags() {
 		throw new UnsupportedOperationException("CloudSimTags cannot be instantiated");
