@@ -192,7 +192,9 @@ public class HdfsDatacenter extends Datacenter {
      * @pre ev != null
      * @post $none
      */
-    protected void processDataCloudletSubmit(SimEvent ev, boolean ack) {
+
+    // ho aggiunto i due parametri di processCloudletMove
+    protected void processDataCloudletSubmit(SimEvent ev, int vmDestId, int destId, boolean ack) {
         updateCloudletProcessing();
 
         try {
@@ -222,6 +224,10 @@ public class HdfsDatacenter extends Datacenter {
                     int tag = CloudSimTags.CLOUDLET_SUBMIT_ACK;
                     sendNow(cl.getUserId(), tag, data);
                 }
+
+                // prima di rimandare il cloudlet indietro, dobbiamo effettuare il file transfer
+
+                // ... TODO
 
                 sendNow(cl.getUserId(), CloudSimTags.CLOUDLET_RETURN, cl);
 

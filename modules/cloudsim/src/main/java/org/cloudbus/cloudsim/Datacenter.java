@@ -631,6 +631,8 @@ public class Datacenter extends SimEntity {
 	 * @post $none
 	 */
 	protected void processCloudletMove(int[] receivedData, int type) {
+		// update nel datacenter di tutti i cloudlets in tutti gli hosts e setta il delay nel datacenter stesso
+		// per quando è possibile iniziare la prossima operazione
 		updateCloudletProcessing();
 
 		int[] array = receivedData;
@@ -638,9 +640,9 @@ public class Datacenter extends SimEntity {
 		int userId = array[1];
 		int vmId = array[2];
 		int vmDestId = array[3];
-		int destId = array[4];
+		int destId = array[4];	// ID del datacenter
 
-		// get the cloudlet
+		// get the cloudlet + cancella l'esecuzione del cloudlet nella vm in cui si trova attualmente
 		Cloudlet cl = getVmAllocationPolicy().getHost(vmId, userId).getVm(vmId,userId)
 				.getCloudletScheduler().cloudletCancel(cloudletId);
 
@@ -649,28 +651,31 @@ public class Datacenter extends SimEntity {
 			failed = true;
 		} else {
 			// has the cloudlet already finished?
-			if (cl.getCloudletStatusString().equals("Success")) {// if yes, send it back to user
+			if (cl.getCloudletStatusString().equals("Success")) {// if yes, send it back to user (che sarebbe il broker)
 				int[] data = new int[3];
 				data[0] = getId();
 				data[1] = cloudletId;
 				data[2] = 0;
-				sendNow(cl.getUserId(), CloudSimTags.CLOUDLET_SUBMIT_ACK, data);
-				sendNow(cl.getUserId(), CloudSimTags.CLOUDLET_RETURN, cl);
+				sendNow(cl.getUserId(), CloudSimTags.CLOUDLET_SUBMIT_ACK, data);	// l'ack del submit
+				sendNow(cl.getUserId(), CloudSimTags.CLOUDLET_RETURN, cl);			// il return indietro del cloudlet
 			}
 
-			// prepare cloudlet for migration
+			// prepare cloudlet for migration => setta la nuova vm nell'apposito field del cloudlet
 			cl.setVmId(vmDestId);
 
 			// the cloudlet will migrate from one vm to another does the destination VM exist?
-			if (destId == getId()) {
+			if (destId == getId()) {	// nota che in questo if controlla che destId == all'Id del Datacenter
+				// check che la vm all'id dato esista davvero
 				Vm vm = getVmAllocationPolicy().getHost(vmDestId, userId).getVm(vmDestId,userId);
 				if (vm == null) {
 					failed = true;
 				} else {
 					// time to transfer the files
-					double fileTransferTime = predictFileTransferTime(cl.getRequiredFiles());
+					double fileTransferTime = predictFileTransferTime(cl.getRequiredFiles()); // tempo di lettura del file dal disco
+					// submittiamo il cloudlet alla vm dopo il delay stabilito dal transfer time
 					vm.getCloudletScheduler().cloudletSubmit(cl, fileTransferTime);
 				}
+			// se il destId non corrisponde a questo Datacenter, il cloudlet è submittato al Datacenter giusto
 			} else {// the cloudlet will migrate from one resource to another
 				int tag = ((type == CloudSimTags.CLOUDLET_MOVE_ACK) ? CloudSimTags.CLOUDLET_SUBMIT_ACK
 						: CloudSimTags.CLOUDLET_SUBMIT);
@@ -678,6 +683,7 @@ public class Datacenter extends SimEntity {
 			}
 		}
 
+		// se il tag non era CLOUDLET_MOVE, ma CLOUDLET_MOVE_ACK, eseguiamo anche questo pezzo finale di codice: l'ack
 		if (type == CloudSimTags.CLOUDLET_MOVE_ACK) {// send ACK if requested
 			int[] data = new int[3];
 			data[0] = getId();
@@ -687,6 +693,7 @@ public class Datacenter extends SimEntity {
 			} else {
 				data[2] = 1;
 			}
+			// mandiamo l'ack indietro al broker
 			sendNow(cl.getUserId(), CloudSimTags.CLOUDLET_SUBMIT_ACK, data);
 		}
 	}
@@ -906,12 +913,12 @@ public class Datacenter extends SimEntity {
 				Host host = list.get(i);
 				// inform VMs to update processing
 				double time = host.updateVmsProcessing(CloudSim.clock());
-				// what time do we expect that the next cloudlet will finish?
+				// what time do we expect that the next cloudlet (in that host) will finish?
 				if (time < smallerTime) {
 					smallerTime = time;
 				}
 			}
-			// gurantees a minimal interval before scheduling the event
+			// guarantees a minimal interval before scheduling the event => discretizza il tempo secondo il nostro standard
 			if (smallerTime < CloudSim.clock() + CloudSim.getMinTimeBetweenEvents() + 0.01) {
 				smallerTime = CloudSim.clock() + CloudSim.getMinTimeBetweenEvents() + 0.01;
 			}

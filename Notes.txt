@@ -30,3 +30,6 @@ anche uno di output (per quando ritornano indietro al broker) c'è un delay nell
 tra broker e client, quindi la simulazione del carico della rete per un file transfer esiste già, devo capire come fare
 per sfruttarla io per i miei scopi, ossia inviare questo hdfs block tramite rete, e magari anche ricevere un ack
 (non so se in hdfs c'è l'ack che viene rimandato indietro, ma suppongo di si).
+
+-- UPDATE: controllare come funziona la migration di un cloudlet da una vm all'altra per prendere spunto su come fare
+per trasferire un file! => GUARDA Datacenter.java riga 671!!
