@@ -944,6 +944,8 @@ public class Datacenter extends SimEntity {
 				while (vm.getCloudletScheduler().isFinishedCloudlets()) {
 					Cloudlet cl = vm.getCloudletScheduler().getNextFinishedCloudlet();
 					if (cl != null) {
+						// per tutti i cloudlets (non nulli) che sono "finished", il Datacenter
+						// invia a se stesso l'evento di Cloudlet Return
 						sendNow(cl.getUserId(), CloudSimTags.CLOUDLET_RETURN, cl);
 					}
 				}

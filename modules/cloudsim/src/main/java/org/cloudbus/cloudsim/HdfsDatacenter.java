@@ -75,12 +75,12 @@ public class HdfsDatacenter extends Datacenter {
 
             // Submit del file transfer cloudlet (Data cloudlet)
             case CloudSimTags.DATA_CLOUDLET_SUBMIT:
-                processDataCloudletSubmit(ev, false);
+                processDataCloudletSubmit(ev, 0, 0, false);
                 break;
 
             // Ack del file transfer cloudlet (Data cloudlet)
             case CloudSimTags.DATA_CLOUDLET_SUBMIT_ACK:
-                processDataCloudletSubmit(ev, true);
+                processDataCloudletSubmit(ev, 0, 0, true);
                 break;
 
             // Cancels a previously submitted Cloudlet
@@ -195,6 +195,9 @@ public class HdfsDatacenter extends Datacenter {
 
     // ho aggiunto i due parametri di processCloudletMove
     protected void processDataCloudletSubmit(SimEvent ev, int vmDestId, int destId, boolean ack) {
+
+        // update nel datacenter di tutti i cloudlets in tutti gli hosts e setta il delay nel datacenter stesso
+        // per quando è possibile iniziare la prossima operazione
         updateCloudletProcessing();
 
         try {
@@ -226,6 +229,8 @@ public class HdfsDatacenter extends Datacenter {
                 }
 
                 // prima di rimandare il cloudlet indietro, dobbiamo effettuare il file transfer
+                // (però magari a questo punto di "cloudlet finished" voglio intendere che è finito
+                // anche il file transfer)
 
                 // ... TODO
 
@@ -234,7 +239,7 @@ public class HdfsDatacenter extends Datacenter {
                 return;
             }
 
-            // process this Cloudlet to this CloudResource
+            // settiamo nel cloudlet le risorse di questo specifico Datacenter in cui ci troviamo
             cl.setResourceParameter(
                     getId(), getCharacteristics().getCostPerSecond(),
                     getCharacteristics().getCostPerBw());
@@ -242,17 +247,22 @@ public class HdfsDatacenter extends Datacenter {
             int userId = cl.getUserId();
             int vmId = cl.getVmId();
 
-            // time to transfer the files
+            // il tempo necessario per leggere i requiredFiles dal disco
             double fileTransferTime = predictFileTransferTime(cl.getRequiredFiles());
 
+            // troviamo l'host in cui si trova la vm del cloudlet
             Host host = getVmAllocationPolicy().getHost(vmId, userId);
+            // get the vm as well
             Vm vm = host.getVm(vmId, userId);
             CloudletScheduler scheduler = vm.getCloudletScheduler();
+            // submittiamo il cloudlet, e il metodo ci ritorna il finish time
             double estimatedFinishTime = scheduler.cloudletSubmit(cl, fileTransferTime);
 
             // if this cloudlet is in the exec queue
             if (estimatedFinishTime > 0.0 && !Double.isInfinite(estimatedFinishTime)) {
                 estimatedFinishTime += fileTransferTime;
+
+                // il Datacenter invia a se stesso l'evento generico che lo fa attendere il tempo necessario
                 send(getId(), estimatedFinishTime, CloudSimTags.VM_DATACENTER_EVENT);
             }
 
@@ -274,6 +284,8 @@ public class HdfsDatacenter extends Datacenter {
             e.printStackTrace();
         }
 
+
+        // questo metodo è quello che invia i Cloudlet return
         checkCloudletCompletion();
     }
 }

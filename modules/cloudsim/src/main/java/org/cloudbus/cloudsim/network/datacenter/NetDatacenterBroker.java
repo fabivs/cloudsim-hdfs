@@ -184,6 +184,8 @@ public class NetDatacenterBroker extends SimEntity {
 				break;
 			// VM Creation answer
 
+			// Non c'è più il caso VM_CREATE_ACK
+
 			// A finished cloudlet returned
 			case CloudSimTags.CLOUDLET_RETURN:
 				processCloudletReturn(ev);
@@ -192,12 +194,14 @@ public class NetDatacenterBroker extends SimEntity {
 			case CloudSimTags.END_OF_SIMULATION:
 				shutdownEntity();
 				break;
+
+			// Nuovo caso
 			case CloudSimTags.NextCycle:
 				if (NetworkConstants.BASE) {
 					createVmsInDatacenterBase(linkDC.getId());
 				}
-
 				break;
+
 			// other unknown tags are processed by this method
 			default:
 				processOtherEvent(ev);
@@ -272,8 +276,8 @@ public class NetDatacenterBroker extends SimEntity {
 			finishExecution();
 		} else { // some cloudlets haven't finished yet
 			if (getAppCloudletList().size() > 0 && cloudletsSubmitted == 0) {
-				// all the cloudlets sent finished. It means that some bount
-				// cloudlet is waiting its VM be created
+				// all the cloudlets sent finished. It means that some bound
+				// cloudlet is waiting for its VM to be created
 				clearDatacenters();
 				createVmsInDatacenterBase(0);
 			}

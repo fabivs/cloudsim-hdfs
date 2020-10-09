@@ -559,6 +559,8 @@ public abstract class SimEntity implements Cloneable {
 
 		int srcId = getId();
 		if (entityId != srcId) {// only delay messages between different entities
+
+			// questa è la singola riga di codice che fa funzionare tutto il network layer lol
 			delay += getNetworkDelay(srcId, entityId);
 		}
 

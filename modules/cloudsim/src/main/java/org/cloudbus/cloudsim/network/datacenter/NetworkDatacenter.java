@@ -207,6 +207,7 @@ public class NetworkDatacenter extends Datacenter {
 				estimatedFinishTime += fileTransferTime;
 				send(getId(), estimatedFinishTime, CloudSimTags.VM_DATACENTER_EVENT);
 
+				// QUESTA È L'UNICA DIFFERENZA RISPETTO AL METODO ORIGINALE DEL Datacenter
 				// event to update the stages
 				send(getId(), 0.0001, CloudSimTags.VM_DATACENTER_EVENT);
 			}

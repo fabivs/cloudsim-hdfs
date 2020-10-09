@@ -33,3 +33,23 @@ per sfruttarla io per i miei scopi, ossia inviare questo hdfs block tramite rete
 
 -- UPDATE: controllare come funziona la migration di un cloudlet da una vm all'altra per prendere spunto su come fare
 per trasferire un file! => GUARDA Datacenter.java riga 671!!
+
+-----------------------------
+
+In Datacenter, predictFileTransferTime() funziona solo se il file si trova nel Datacenter stesso, non per Datacenter
+diversi, perchè riguarda il tempo per accedere il file dal proprio disco.
+=> Controllo NetworkDatacenter nella network folder.. NOPE, non è nemmeno usato nei network examples lol.
+
+Also TODO: una HDFS folder in org.cloudbus.cloudsim in cui mettere dentro tutte le mie classi
+
+Però mi sembra sensata l'idea che:
+- il cloudlet viene eseguito sulla VM del client (e fa la lettura dei propri requiredFiles usando
+il metodo predictFileTransferTime).
+- il cloudlet non termina, ma viene trasferito tramite una "cloudlet move" alla VM del Data Node (che purtroppo deve
+trovarsi in un altro datacenter), qui viene ri-eseguito da capo (almeno così ho capito che funziona la cloudlet move) e
+rifà la lettura dei requiredFiles, che dovrebbe dinamicamente funzionare come un trasferimento dei file dal disco
+originale a quello dell'host in cui si trova il Data Node.
+- a questo punto termina il secondo cloudlet, e il primo ormai penso non ci sia bisogno di fare più niente a riguardo
+perchè è stato trasferito.
+
+=>
