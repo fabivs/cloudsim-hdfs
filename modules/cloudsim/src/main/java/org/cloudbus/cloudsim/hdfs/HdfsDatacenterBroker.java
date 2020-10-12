@@ -1,5 +1,9 @@
-package org.cloudbus.cloudsim;
+package org.cloudbus.cloudsim.hdfs;
 
+import org.cloudbus.cloudsim.Cloudlet;
+import org.cloudbus.cloudsim.DatacenterBroker;
+import org.cloudbus.cloudsim.Log;
+import org.cloudbus.cloudsim.Vm;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.core.CloudSimTags;
 import org.cloudbus.cloudsim.lists.VmList;
@@ -55,7 +59,7 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
             }
 
             cloudlet.setVmId(vm.getId());
-            sendNow(getVmsToDatacentersMap().get(vm.getId()), CloudSimTags.DATA_CLOUDLET_SUBMIT, cloudlet);
+            sendNow(getVmsToDatacentersMap().get(vm.getId()), CloudSimTags.HDFS_CLIENT_CLOUDLET_SUBMIT, cloudlet);
             cloudletsSubmitted++;
             vmIndex = (vmIndex + 1) % getVmsCreatedList().size();
             getCloudletSubmittedList().add(cloudlet);

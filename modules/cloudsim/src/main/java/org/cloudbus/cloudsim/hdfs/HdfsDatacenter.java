@@ -1,5 +1,6 @@
-package org.cloudbus.cloudsim;
+package org.cloudbus.cloudsim.hdfs;
 
+import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.core.CloudSimTags;
 import org.cloudbus.cloudsim.core.SimEvent;
@@ -74,13 +75,23 @@ public class HdfsDatacenter extends Datacenter {
                 break;
 
             // Submit del file transfer cloudlet (Data cloudlet)
-            case CloudSimTags.DATA_CLOUDLET_SUBMIT:
-                processDataCloudletSubmit(ev, 0, 0, false);
+            case CloudSimTags.HDFS_CLIENT_CLOUDLET_SUBMIT:
+                processClientCloudletSubmit(ev, 0, 0, false);
                 break;
 
             // Ack del file transfer cloudlet (Data cloudlet)
-            case CloudSimTags.DATA_CLOUDLET_SUBMIT_ACK:
-                processDataCloudletSubmit(ev, 0, 0, true);
+            case CloudSimTags.HDFS_CLIENT_CLOUDLET_SUBMIT_ACK:
+                processClientCloudletSubmit(ev, 0, 0, true);
+                break;
+
+            // Submit del file transfer cloudlet (Data cloudlet)
+            case CloudSimTags.HDFS_DN_CLOUDLET_SUBMIT:
+                processDNCloudletSubmit(ev, 0, 0, false);
+                break;
+
+            // Ack del file transfer cloudlet (Data cloudlet)
+            case CloudSimTags.HDFS_DN_CLOUDLET_SUBMIT_ACK:
+                processDNCloudletSubmit(ev, 0, 0, true);
                 break;
 
             // Cancels a previously submitted Cloudlet
@@ -194,7 +205,103 @@ public class HdfsDatacenter extends Datacenter {
      */
 
     // ho aggiunto i due parametri di processCloudletMove
-    protected void processDataCloudletSubmit(SimEvent ev, int vmDestId, int destId, boolean ack) {
+    protected void processClientCloudletSubmit(SimEvent ev, int vmDestId, int destId, boolean ack) {
+
+        // update nel datacenter di tutti i cloudlets in tutti gli hosts e setta il delay nel datacenter stesso
+        // per quando è possibile iniziare la prossima operazione
+        updateCloudletProcessing();
+
+        try {
+            // gets the Cloudlet object
+            Cloudlet cl = (Cloudlet) ev.getData();
+
+            // checks whether this Cloudlet has finished or not
+            // TODO: controllare questo blocco
+            if (cl.isFinished()) {
+                String name = CloudSim.getEntityName(cl.getUserId());
+                Log.printConcatLine(getName(), ": Warning - Cloudlet #", cl.getCloudletId(), " owned by ", name,
+                        " is already completed/finished.");
+                Log.printLine("Therefore, it is not being executed again");
+                Log.printLine();
+
+                // NOTE: If a Cloudlet has finished, then it won't be processed.
+                // So, if ack is required, this method sends back a result.
+                // If ack is not required, this method don't send back a result.
+                // Hence, this might cause CloudSim to be hanged since waiting
+                // for this Cloudlet back.
+                if (ack) {
+                    int[] data = new int[3];
+                    data[0] = getId();
+                    data[1] = cl.getCloudletId();
+                    data[2] = CloudSimTags.FALSE;
+
+                    // unique tag = operation tag
+                    int tag = CloudSimTags.CLOUDLET_SUBMIT_ACK;
+                    sendNow(cl.getUserId(), tag, data);
+                }
+
+                sendNow(cl.getUserId(), CloudSimTags.CLOUDLET_RETURN, cl);
+
+                return;
+            }
+
+            // settiamo nel cloudlet le risorse di questo specifico Datacenter in cui ci troviamo
+            cl.setResourceParameter(
+                    getId(), getCharacteristics().getCostPerSecond(),
+                    getCharacteristics().getCostPerBw());
+
+            int userId = cl.getUserId();
+            int vmId = cl.getVmId();
+
+            // il tempo necessario per leggere i requiredFiles dal disco
+            double fileTransferTime = predictFileTransferTime(cl.getRequiredFiles());
+
+            // troviamo l'host in cui si trova la vm del cloudlet
+            Host host = getVmAllocationPolicy().getHost(vmId, userId);
+            // get the vm as well
+            Vm vm = host.getVm(vmId, userId);
+            CloudletScheduler scheduler = vm.getCloudletScheduler();
+            // submittiamo il cloudlet, e il metodo ci ritorna il finish time
+            double estimatedFinishTime = scheduler.cloudletSubmit(cl, fileTransferTime);
+
+            // if this cloudlet is in the exec queue
+            if (estimatedFinishTime > 0.0 && !Double.isInfinite(estimatedFinishTime)) {
+                estimatedFinishTime += fileTransferTime;
+
+                // il Datacenter invia a se stesso l'evento generico che lo fa attendere il tempo necessario
+                send(getId(), estimatedFinishTime, CloudSimTags.VM_DATACENTER_EVENT);
+            }
+
+            if (ack) {
+                int[] data = new int[3];
+                data[0] = getId();
+                data[1] = cl.getCloudletId();
+                data[2] = CloudSimTags.TRUE;
+
+                // unique tag = operation tag
+                int tag = CloudSimTags.CLOUDLET_SUBMIT_ACK;
+                sendNow(cl.getUserId(), tag, data);
+            }
+
+            // ...
+            // send();
+
+        } catch (ClassCastException c) {
+            Log.printLine(getName() + ".processCloudletSubmit(): " + "ClassCastException error.");
+            c.printStackTrace();
+        } catch (Exception e) {
+            Log.printLine(getName() + ".processCloudletSubmit(): " + "Exception error.");
+            e.printStackTrace();
+        }
+
+
+        // questo metodo è quello che invia i Cloudlet return
+        checkCloudletCompletion();
+    }
+
+    // il metodo per il Data Node che deve scrivere il file su disco
+    // per scrivere il file semplicemente creiamo un nuovo file object delle dimensioni giuste e lo "scriviamo" su disco
+    protected void processDNCloudletSubmit(SimEvent ev, int vmDestId, int destId, boolean ack) {
 
         // update nel datacenter di tutti i cloudlets in tutti gli hosts e setta il delay nel datacenter stesso
         // per quando è possibile iniziare la prossima operazione
@@ -288,4 +395,5 @@ public class HdfsDatacenter extends Datacenter {
         // questo metodo è quello che invia i Cloudlet return
         checkCloudletCompletion();
     }
+
 }

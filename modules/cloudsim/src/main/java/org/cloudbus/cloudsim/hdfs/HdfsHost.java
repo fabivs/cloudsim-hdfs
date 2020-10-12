@@ -1,5 +1,9 @@
-package org.cloudbus.cloudsim;
+package org.cloudbus.cloudsim.hdfs;
 
+import org.cloudbus.cloudsim.HarddriveStorage;
+import org.cloudbus.cloudsim.Host;
+import org.cloudbus.cloudsim.Pe;
+import org.cloudbus.cloudsim.VmScheduler;
 import org.cloudbus.cloudsim.provisioners.BwProvisioner;
 import org.cloudbus.cloudsim.provisioners.RamProvisioner;
 
@@ -10,7 +14,7 @@ import java.util.List;
 // HdfsHost usa la class HarddriveStorage, già presente in Cloudsim, per simulare lo storage
 // Un normale Host usa un semplice "long" per tenere traccia dello storage
 
-public class HdfsHost extends Host{
+public class HdfsHost extends Host {
 
     private HarddriveStorage actualStorage;
 

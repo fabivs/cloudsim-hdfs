@@ -7,7 +7,7 @@ CLOUDLET_SUBMIT, usa un nuovo tag DATA_CLOUDLET_SUBMIT, questi cloudlets, con il
 (DATA_CLOUDLET_SUBMIT e DATA_CLOUDLET_SUBMIT_ACK) e ho aggiunto quindi un nuovo metodo che viene chiamato quando arriva
 un evento con questi tags, il metodo si chiama "processDataCloudletSubmit()".
 
-TODO RIGHT NOW: scrivere il codice appropriato in processDataCloudletSubmit()
+TODO RIGHT NOW: scrivere il codice appropriato in processDataCloudletSubmit() -- actually ho creato un tag nuovo
 
 Il metodo deve ora eseguire il codice relativo al Cloudlet di file transfer!
 
@@ -37,8 +37,10 @@ per trasferire un file! => GUARDA Datacenter.java riga 671!!
 -----------------------------
 
 In Datacenter, predictFileTransferTime() funziona solo se il file si trova nel Datacenter stesso, non per Datacenter
-diversi, perchè riguarda il tempo per accedere il file dal proprio disco.
+diversi, perchè riguarda il tempo per accedere il file da uno dei propri dischi.
 => Controllo NetworkDatacenter nella network folder.. NOPE, non è nemmeno usato nei network examples lol.
+    => Nessuna delle "Network" classes è usata nei network examples... sono usate le solite classi, ma nel metodo send()
+    in SimEntity, c'è l'attesa per il network delay, that's it.
 
 Also TODO: una HDFS folder in org.cloudbus.cloudsim in cui mettere dentro tutte le mie classi
 
@@ -52,4 +54,12 @@ originale a quello dell'host in cui si trova il Data Node.
 - a questo punto termina il secondo cloudlet, e il primo ormai penso non ci sia bisogno di fare più niente a riguardo
 perchè è stato trasferito.
 
-=>
+REFINED IDEA:
+- il broker invia alla vm del client il cloudlet, questo cloudlet ha come utilizzo di Bandwidth quello necessario per
+trasferire il file. Il cloudlet ha il requiredFile che va letto, usando il metodo predictFileTranferTime, cosa che già
+esiste nel Cloudsim base.
+- il metodo che viene eseguito nel Datacenter del Client, dopo aver letto il file, fa una send() alla vm del DN,
+perchè il metodo send() è affetto dal network delay già di suo.
+- il cloudlet arriva alla vm del DN, e questo cloudlet avrà lo stesso utilizzo di bw, anche se invece di spedire il file
+lo deve ricevere, l'utilizzo è lo stesso. Dopodichè ci deve essere anche un metodo che scrive il file sul disco nel DN,
+riempiendo l'hard disk e ci mette un certo delay.

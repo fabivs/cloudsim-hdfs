@@ -277,10 +277,16 @@ public class CloudSimTags {
 	 */
 
 	// Denotes the submission of a Data Cloudlet (to initiate a file transfer)
-	public static final int DATA_CLOUDLET_SUBMIT = BASE + 49;
+	public static final int HDFS_CLIENT_CLOUDLET_SUBMIT = BASE + 49;
 
 	// Denotes the submition of a Data Cloudlet Acknowledgement (l'ack di conferma che torna indietro)
-	public static final int DATA_CLOUDLET_SUBMIT_ACK = BASE + 50;
+	public static final int HDFS_CLIENT_CLOUDLET_SUBMIT_ACK = BASE + 50;
+
+	// Denotes the submission of a Data Cloudlet (to initiate a file transfer)
+	public static final int HDFS_DN_CLOUDLET_SUBMIT = BASE + 51;
+
+	// Denotes the submition of a Data Cloudlet Acknowledgement (l'ack di conferma che torna indietro)
+	public static final int HDFS_DN_CLOUDLET_SUBMIT_ACK = BASE + 52;
 
 	/** Private Constructor. */
 	private CloudSimTags() {
