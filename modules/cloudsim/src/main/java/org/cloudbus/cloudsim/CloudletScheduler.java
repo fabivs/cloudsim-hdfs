@@ -76,7 +76,7 @@ public abstract class CloudletScheduler {
 	public abstract double updateVmProcessing(double currentTime, List<Double> mipsShare);
 
 	/**
-	 * Receives an cloudlet to be executed in the VM managed by this scheduler.
+	 * Receives a cloudlet to be executed in the VM managed by this scheduler.
 	 * 
 	 * @param gl the submited cloudlet (@todo it's a strange param name)
 	 * @param fileTransferTime time required to move the required files from the SAN to the VM

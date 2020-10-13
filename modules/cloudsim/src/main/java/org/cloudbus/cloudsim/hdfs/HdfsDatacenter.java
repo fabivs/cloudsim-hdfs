@@ -76,12 +76,12 @@ public class HdfsDatacenter extends Datacenter {
 
             // Submit del file transfer cloudlet (Data cloudlet)
             case CloudSimTags.HDFS_CLIENT_CLOUDLET_SUBMIT:
-                processClientCloudletSubmit(ev, 0, 0, false);
+                processClientCloudletSubmit(ev, false);
                 break;
 
             // Ack del file transfer cloudlet (Data cloudlet)
             case CloudSimTags.HDFS_CLIENT_CLOUDLET_SUBMIT_ACK:
-                processClientCloudletSubmit(ev, 0, 0, true);
+                processClientCloudletSubmit(ev, true);
                 break;
 
             // Submit del file transfer cloudlet (Data cloudlet)
@@ -205,7 +205,7 @@ public class HdfsDatacenter extends Datacenter {
      */
 
     // ho aggiunto i due parametri di processCloudletMove
-    protected void processClientCloudletSubmit(SimEvent ev, int vmDestId, int destId, boolean ack) {
+    protected void processClientCloudletSubmit(SimEvent ev, boolean ack) {
 
         // update nel datacenter di tutti i cloudlets in tutti gli hosts e setta il delay nel datacenter stesso
         // per quando è possibile iniziare la prossima operazione
@@ -213,7 +213,7 @@ public class HdfsDatacenter extends Datacenter {
 
         try {
             // gets the Cloudlet object
-            Cloudlet cl = (Cloudlet) ev.getData();
+            HdfsCloudlet cl = (HdfsCloudlet) ev.getData();
 
             // checks whether this Cloudlet has finished or not
             // TODO: controllare questo blocco
@@ -240,7 +240,9 @@ public class HdfsDatacenter extends Datacenter {
                     sendNow(cl.getUserId(), tag, data);
                 }
 
-                sendNow(cl.getUserId(), CloudSimTags.CLOUDLET_RETURN, cl);
+                // Cambiamento del tag: in modo che il broker sa che è tornato il cloudlet che ha letto il file,
+                // ora può inviare il cloudlet che scriverà il file alla vm del Data Node
+                sendNow(cl.getUserId(), CloudSimTags.HDFS_CLIENT_CLOUDLET_RETURN, cl);
 
                 return;
             }

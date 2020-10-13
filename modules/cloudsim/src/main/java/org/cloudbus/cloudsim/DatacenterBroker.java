@@ -360,7 +360,7 @@ public class DatacenterBroker extends SimEntity {
 				if (vm == null) { // vm was not created
 					if(!Log.isDisabled()) {				    
 					    Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Postponing execution of cloudlet ",
-							cloudlet.getCloudletId(), ": bount VM not available");
+							cloudlet.getCloudletId(), ": bound VM not available");
 					}
 					continue;
 				}

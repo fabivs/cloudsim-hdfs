@@ -325,7 +325,7 @@ public class CloudletSchedulerSpaceShared extends CloudletScheduler {
 		}
 
 		currentCpus = cpus;
-		capacity /= cpus;
+		capacity /= cpus;	// capacity = capacity / cpus
 
 		// use the current capacity to estimate the extra amount of
 		// time to file transferring. It must be added to the cloudlet length

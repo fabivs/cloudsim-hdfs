@@ -288,6 +288,12 @@ public class CloudSimTags {
 	// Denotes the submition of a Data Cloudlet Acknowledgement (l'ack di conferma che torna indietro)
 	public static final int HDFS_DN_CLOUDLET_SUBMIT_ACK = BASE + 52;
 
+	// Denotes the return of the Cloudlet from the Client to the Broker, questo è il Cloudlet che legge il block
+	public static final int HDFS_CLIENT_CLOUDLET_RETURN = BASE + 53;
+
+	// Denotes the return of the Cloudlet from the DN to the Broker, questo è il Cloudlet che scrive il block
+	public static final int HDFS_DN_CLOUDLET_RETURN = BASE + 54;
+
 	/** Private Constructor. */
 	private CloudSimTags() {
 		throw new UnsupportedOperationException("CloudSimTags cannot be instantiated");
