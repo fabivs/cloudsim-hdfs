@@ -10,6 +10,10 @@ public class HdfsCloudlet extends Cloudlet {
     // the id of the Data Node VM where the data block will be written
     protected int destVmId;
 
+    /**
+     * Non so se i costruttori vanno reimplementati tutti, quindi per ora ce li ho messi...
+     */
+
     public HdfsCloudlet(int cloudletId, long cloudletLength, int pesNumber, long cloudletFileSize, long cloudletOutputSize,
                         UtilizationModel utilizationModelCpu, UtilizationModel utilizationModelRam, UtilizationModel utilizationModelBw) {
         super(cloudletId, cloudletLength, pesNumber, cloudletFileSize, cloudletOutputSize, utilizationModelCpu, utilizationModelRam, utilizationModelBw);

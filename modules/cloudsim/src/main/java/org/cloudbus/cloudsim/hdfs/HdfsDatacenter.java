@@ -5,6 +5,7 @@ import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.core.CloudSimTags;
 import org.cloudbus.cloudsim.core.SimEvent;
 
+import java.util.Iterator;
 import java.util.List;
 
 public class HdfsDatacenter extends Datacenter {
@@ -72,26 +73,6 @@ public class HdfsDatacenter extends Datacenter {
             // New Cloudlet arrives, but the sender asks for an ack
             case CloudSimTags.CLOUDLET_SUBMIT_ACK:
                 processCloudletSubmit(ev, true);
-                break;
-
-            // Submit del file transfer cloudlet (Data cloudlet)
-            case CloudSimTags.HDFS_CLIENT_CLOUDLET_SUBMIT:
-                processClientCloudletSubmit(ev, false);
-                break;
-
-            // Ack del file transfer cloudlet (Data cloudlet)
-            case CloudSimTags.HDFS_CLIENT_CLOUDLET_SUBMIT_ACK:
-                processClientCloudletSubmit(ev, true);
-                break;
-
-            // Submit del file transfer cloudlet (Data cloudlet)
-            case CloudSimTags.HDFS_DN_CLOUDLET_SUBMIT:
-                processDNCloudletSubmit(ev, 0, 0, false);
-                break;
-
-            // Ack del file transfer cloudlet (Data cloudlet)
-            case CloudSimTags.HDFS_DN_CLOUDLET_SUBMIT_ACK:
-                processDNCloudletSubmit(ev, 0, 0, true);
                 break;
 
             // Cancels a previously submitted Cloudlet
@@ -186,6 +167,30 @@ public class HdfsDatacenter extends Datacenter {
                 checkCloudletCompletion();
                 break;
 
+            /**
+             *  HDFS TAGS
+             */
+
+            // Submit del file transfer cloudlet (Data cloudlet)
+            case CloudSimTags.HDFS_CLIENT_CLOUDLET_SUBMIT:
+                processClientCloudletSubmit(ev, false);
+                break;
+
+            // Ack del file transfer cloudlet (Data cloudlet)
+            case CloudSimTags.HDFS_CLIENT_CLOUDLET_SUBMIT_ACK:
+                processClientCloudletSubmit(ev, true);
+                break;
+
+            // Submit del file transfer cloudlet (Data cloudlet)
+            case CloudSimTags.HDFS_DN_CLOUDLET_SUBMIT:
+                processDNCloudletSubmit(ev, false);
+                break;
+
+            // Ack del file transfer cloudlet (Data cloudlet)
+            case CloudSimTags.HDFS_DN_CLOUDLET_SUBMIT_ACK:
+                processDNCloudletSubmit(ev, true);
+                break;
+
             // other unknown tags are processed by this method
             default:
                 processOtherEvent(ev);
@@ -194,7 +199,7 @@ public class HdfsDatacenter extends Datacenter {
     }
 
     /**
-     * Processes a Cloudlet submission.
+     * Processes a Client Cloudlet submission, which reads a block from disk and sends it to the DN VM over the network
      *
      * @param ev information about the event just happened
      * @param ack indicates if the event's sender expects to receive
@@ -303,7 +308,10 @@ public class HdfsDatacenter extends Datacenter {
 
     // il metodo per il Data Node che deve scrivere il file su disco
     // per scrivere il file semplicemente creiamo un nuovo file object delle dimensioni giuste e lo "scriviamo" su disco
-    protected void processDNCloudletSubmit(SimEvent ev, int vmDestId, int destId, boolean ack) {
+
+    // il metodo predictFileTransferTime() viene sostituito con un metodo che scrive il file su disco e ritorna il tempo
+    // stimato per effettuare l'operazione
+    protected void processDNCloudletSubmit(SimEvent ev, boolean ack) {
 
         // update nel datacenter di tutti i cloudlets in tutti gli hosts e setta il delay nel datacenter stesso
         // per quando è possibile iniziare la prossima operazione
@@ -311,7 +319,7 @@ public class HdfsDatacenter extends Datacenter {
 
         try {
             // gets the Cloudlet object
-            Cloudlet cl = (Cloudlet) ev.getData();
+            HdfsCloudlet cl = (HdfsCloudlet) ev.getData();
 
             // checks whether this Cloudlet has finished or not
             if (cl.isFinished()) {
@@ -339,9 +347,9 @@ public class HdfsDatacenter extends Datacenter {
 
                 // prima di rimandare il cloudlet indietro, dobbiamo effettuare il file transfer
                 // (però magari a questo punto di "cloudlet finished" voglio intendere che è finito
-                // anche il file transfer)
+                // anche il file transfer) ?????????
 
-                // ... TODO
+                // ... TODO: tutto questo blocco di codice va visto, non ci capisco un cazzo
 
                 sendNow(cl.getUserId(), CloudSimTags.CLOUDLET_RETURN, cl);
 
@@ -357,7 +365,9 @@ public class HdfsDatacenter extends Datacenter {
             int vmId = cl.getVmId();
 
             // il tempo necessario per leggere i requiredFiles dal disco
-            double fileTransferTime = predictFileTransferTime(cl.getRequiredFiles());
+            double fileTransferTime = writeAndPredictTime(cl.getRequiredFiles());
+
+            // TODO: some catch per gli eventuali problemi se la scrittura del file fallisce (disco pieno o altro)
 
             // troviamo l'host in cui si trova la vm del cloudlet
             Host host = getVmAllocationPolicy().getHost(vmId, userId);
@@ -396,6 +406,38 @@ public class HdfsDatacenter extends Datacenter {
 
         // questo metodo è quello che invia i Cloudlet return
         checkCloudletCompletion();
+    }
+
+    /**
+     * Write the list of files and predict the total time necessary to perform the operation
+     * Mi serve solo per un HDFS block, però per ora lascio la lista di files, penso userò un singolo file che fa da
+     * blocco
+     *
+     * @param requiredFiles the files to be written
+     * @return the predicted time
+     */
+    protected double writeAndPredictTime(List<String> requiredFiles) {
+        double time = 0.0;
+
+        Iterator<String> iter = requiredFiles.iterator();
+        while (iter.hasNext()) {
+            String fileName = iter.next();
+
+            // cycle through all the available drives in the Database
+            for (int i = 0; i < getStorageList().size(); i++) {
+                // get the drive i
+                Storage tempStorage = getStorageList().get(i);
+
+                // TODO: if the drive has enough space and the file is not already present (replica), write it
+                // il resto qui sotto è ancora della funzione originale
+                File tempFile = tempStorage.getFile(fileName);
+                if (tempFile != null) {
+                    time += tempFile.getSize() / tempStorage.getMaxTransferRate();
+                    break;
+                }
+            }
+        }
+        return time;
     }
 
 }

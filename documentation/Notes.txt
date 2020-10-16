@@ -42,7 +42,7 @@ diversi, perchè riguarda il tempo per accedere il file da uno dei propri dischi
     => Nessuna delle "Network" classes è usata nei network examples... sono usate le solite classi, ma nel metodo send()
     in SimEntity, c'è l'attesa per il network delay, that's it.
 
-Also TODO: una HDFS folder in org.cloudbus.cloudsim in cui mettere dentro tutte le mie classi
+Also TODO: una HDFS folder in org.cloudbus.cloudsim in cui mettere dentro tutte le mie classi -- DONE
 
 Però mi sembra sensata l'idea che:
 - il cloudlet viene eseguito sulla VM del client (e fa la lettura dei propri requiredFiles usando

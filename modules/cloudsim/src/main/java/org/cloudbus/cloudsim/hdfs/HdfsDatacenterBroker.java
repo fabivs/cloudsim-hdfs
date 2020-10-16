@@ -46,6 +46,14 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
             case CloudSimTags.CLOUDLET_RETURN:
                 processCloudletReturn(ev);
                 break;
+            // if the simulation finishes
+            case CloudSimTags.END_OF_SIMULATION:
+                shutdownEntity();
+                break;
+
+            /**
+             *  HDFS tags
+             */
 
             // A finished cloudlet returned
             case CloudSimTags.HDFS_CLIENT_CLOUDLET_RETURN:
@@ -56,10 +64,6 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
                 processCloudletReturn(ev);
                 break;
 
-            // if the simulation finishes
-            case CloudSimTags.END_OF_SIMULATION:
-                shutdownEntity();
-                break;
             // other unknown tags are processed by this method
             default:
                 processOtherEvent(ev);
@@ -68,14 +72,28 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
     }
 
     // Ritorna il cloudlet del client, che ha letto il file
+    // Bisogna ora mandare il cloudlet again al DN
     protected void processClientCloudletReturn(SimEvent ev) {
-        HdfsCloudlet cloudlet = (HdfsCloudlet) ev.getData();
-        Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Cloudlet ", cloudlet.getCloudletId(),
-                " file has been read");
 
+        HdfsCloudlet cloudlet = (HdfsCloudlet) ev.getData();
+
+        Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Cloudlet ", cloudlet.getCloudletId(),
+                " the block has been read, sending it to the Data Node...");
+
+        // set the DN VM as the new VM Id for the cloudlet
         cloudlet.setVmId(cloudlet.getDestVmId());
+
+        // alternativamente si può usare il metodo bind che fa la stessa cosa
+        // bindCloudletToVm(cloudlet.getCloudletId(), cloudlet.getVmId());
+
+        // add the cloudlet to the list of submitted cloudlets
         getCloudletList().add(cloudlet);
-        /* ri-eseguiamo questo metodo, che ora troverà il nuovo unbound cloudlet nella lista, e lo binderà e invierà
+
+        // non so se prima settare la VM e poi aggiungere alla CloudletList, o se fare il contrario, vedremo...
+
+        // TODO: cambiare l'Id del cloudlet in qualcosa di diverso
+
+        /* ri-eseguiamo questo metodo, che ora troverà il nuovo unbound cloudlet nella lista, e lo invierà
         alla VM appropriata, inoltre settando la posizione del broker uguale a quella del client nella topology,
         avremo una corretta simulazione del delay per l'invio del file tramite network
         */
@@ -151,8 +169,12 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
                         cloudlet.getCloudletId(), " to VM #", vm.getId());
             }
 
+            // non è ridondante questo?
             cloudlet.setVmId(vm.getId());
+
+            // il metodo dovrebbe automaticamente trovare il Datacenter in cui si trova la VM del DN senza problemi
             sendNow(getVmsToDatacentersMap().get(vm.getId()), CloudSimTags.HDFS_DN_CLOUDLET_SUBMIT, cloudlet);
+
             cloudletsSubmitted++;
             vmIndex = (vmIndex + 1) % getVmsCreatedList().size();
             getCloudletSubmittedList().add(cloudlet);
