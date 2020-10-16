@@ -221,7 +221,7 @@ public class HdfsDatacenter extends Datacenter {
             HdfsCloudlet cl = (HdfsCloudlet) ev.getData();
 
             // checks whether this Cloudlet has finished or not
-            // TODO: controllare questo blocco
+            // TODO: controllare questo blocco if
             if (cl.isFinished()) {
                 String name = CloudSim.getEntityName(cl.getUserId());
                 Log.printConcatLine(getName(), ": Warning - Cloudlet #", cl.getCloudletId(), " owned by ", name,
@@ -289,9 +289,6 @@ public class HdfsDatacenter extends Datacenter {
                 int tag = CloudSimTags.CLOUDLET_SUBMIT_ACK;
                 sendNow(cl.getUserId(), tag, data);
             }
-
-            // ...
-            // send();
 
         } catch (ClassCastException c) {
             Log.printLine(getName() + ".processCloudletSubmit(): " + "ClassCastException error.");
@@ -365,7 +362,7 @@ public class HdfsDatacenter extends Datacenter {
             int vmId = cl.getVmId();
 
             // il tempo necessario per leggere i requiredFiles dal disco
-            double fileTransferTime = writeAndPredictTime(cl.getRequiredFiles());
+            double fileTransferTime = writeAndPredictTime(cl.getSourceVmId(), cl.getBlockSize());
 
             // TODO: some catch per gli eventuali problemi se la scrittura del file fallisce (disco pieno o altro)
 
@@ -412,31 +409,53 @@ public class HdfsDatacenter extends Datacenter {
      * Write the list of files and predict the total time necessary to perform the operation
      * Mi serve solo per un HDFS block, però per ora lascio la lista di files, penso userò un singolo file che fa da
      * blocco
-     *
-     * @param requiredFiles the files to be written
-     * @return the predicted time
      */
-    protected double writeAndPredictTime(List<String> requiredFiles) {
+    protected double writeAndPredictTime(int sourceVmId, int blockSize) {
         double time = 0.0;
 
-        Iterator<String> iter = requiredFiles.iterator();
-        while (iter.hasNext()) {
-            String fileName = iter.next();
+        // random file name
+        // TODO: this method is obviously flawed, multiple files could end up with the same file name
+        int randomNumber = (int) (Math.random() * 1000);
+        String fileName = "HdfsBlock_" + randomNumber;
 
-            // cycle through all the available drives in the Database
-            for (int i = 0; i < getStorageList().size(); i++) {
-                // get the drive i
-                Storage tempStorage = getStorageList().get(i);
+        // create a new instance of File
+        File hdfsBlock = null;
+        try {
+            hdfsBlock = new File(fileName, blockSize);
+        } catch (ParameterException e) {
+            Log.printLine(getName() + ".writeAndPredictTime(): " + "File creation error (invalid name or size).");
+            e.printStackTrace();
+        }
 
-                // TODO: if the drive has enough space and the file is not already present (replica), write it
-                // il resto qui sotto è ancora della funzione originale
-                File tempFile = tempStorage.getFile(fileName);
-                if (tempFile != null) {
-                    time += tempFile.getSize() / tempStorage.getMaxTransferRate();
-                    break;
-                }
+        // set the owner of the file
+        if (hdfsBlock != null) {
+            // NOTE: don't forget that this is now a string
+            String ownerName = String.valueOf(sourceVmId);
+            hdfsBlock.getFileAttribute().setOwnerName(ownerName);
+        }
+
+        // the file "hdfsBlock" now has a random file name, a file size, and the owner vm id (as a string)
+
+        // now we add the file to the storage inside this Database, and we estimate the required time
+
+        // cycle through all the available drives in the Database
+        for (int i = 0; i < getStorageList().size(); i++) {
+
+            // get the drive i
+            Storage tempStorage = getStorageList().get(i);
+            // store the file and get the estimated time
+            time += tempStorage.addFile(hdfsBlock);
+
+            // time is only equal 0.0 if the addFile failed for some reason, so if the addFile was successful, we break
+            if (time != 0.0){
+                break;
             }
         }
+
+        if (time == 0.0){
+            Log.printLine(getName() + ".writeAndPredictTime(): " + "Couldn't add the file to any storage unit.");
+        }
+
         return time;
     }
 

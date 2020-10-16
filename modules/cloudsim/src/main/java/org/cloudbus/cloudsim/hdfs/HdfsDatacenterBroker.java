@@ -80,6 +80,8 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
         Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Cloudlet ", cloudlet.getCloudletId(),
                 " the block has been read, sending it to the Data Node...");
 
+        // store the original vm id, so we can keep track of whose block it is in the DN
+        cloudlet.setSourceVmId(cloudlet.getVmId());
         // set the DN VM as the new VM Id for the cloudlet
         cloudlet.setVmId(cloudlet.getDestVmId());
 
