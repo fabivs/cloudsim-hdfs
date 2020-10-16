@@ -1,0 +1,5 @@
+TODOs:
+
+- completare il metodo writeAndPredictTime() in HdfsDatacenter (vedi i commenti inside it)
+- l'host deve avere come storage un actual instance di storage, invece che solo un long, controllare poi che funzionino
+  correttamente i metodi predictFileTransferTime() in Datacenter e writeAndPredictTime() in HdfsDatacenter
