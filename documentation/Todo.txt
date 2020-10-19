@@ -5,6 +5,11 @@ Features:
 
 File transfer:
 
+- scrivere il primo Hdfs Example file per testare (non dimenticare la network topology!!)
+
+- nell'example, fare in modo che una vm viene per forza assegnata nel primo datacenter e le altre vm nel secondo
+  datacenter, in modo che posso avere un datacenter per il client e uno per le vms
+
 - il cloudlet lato Client prima termina (usando la bandwidth), e poi viene inviato al DN, l'invio al DN deve avvenire
   subito dopo il metodo predictFileTransferTime(), così che i due cloudlets usino bandwidth allo stesso tempo, ma dopo
   l'iniziale network delay, dato dal metodo send(). Almeno così sarebbe preferibile e più realistico. Al momento il

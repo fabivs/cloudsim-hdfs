@@ -11,6 +11,9 @@ package org.cloudbus.cloudsim.examples;
 
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
+import org.cloudbus.cloudsim.hdfs.HdfsDatacenter;
+import org.cloudbus.cloudsim.hdfs.HdfsDatacenterBroker;
+import org.cloudbus.cloudsim.hdfs.HdfsHost;
 import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.PeProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
@@ -44,7 +47,7 @@ public class HdfsExample0 {
 	 */
 	public static void main(String[] args) {
 
-		Log.printLine("Starting CloudSimExample3...");
+		Log.printLine("Starting HdfsExample0...");
 
 		try {
 			// First step: Initialize the CloudSim package. It should be called
@@ -57,19 +60,21 @@ public class HdfsExample0 {
 			CloudSim.init(num_user, calendar, trace_flag);
 
 			// Second step: Create Datacenters
-			//Datacenters are the resource providers in CloudSim. We need at list one of them to run a CloudSim simulation
 			@SuppressWarnings("unused")
-			Datacenter datacenter0 = createDatacenter("Datacenter_0");
+			// Client datacenter
+			HdfsDatacenter datacenter0 = createDatacenter("Datacenter_0");
+			// Data Nodes datacenter
+			HdfsDatacenter datacenter1 = createDatacenter("Datacenter_1");
 
-			//Third step: Create Broker
-			DatacenterBroker broker = createBroker();
+			//Third step: Create a Broker (ne serve solo uno perchè abbiamo un solo Client)
+			HdfsDatacenterBroker broker = createBroker();
 			int brokerId = broker.getId();
 
 			//Fourth step: Create one virtual machine
 			vmlist = new ArrayList<Vm>();
 
 			//VM description
-			int vmid = 0;
+			int vmId = 0;
 			int mips = 250;
 			long size = 10000; //image size (MB)
 			int ram = 2048; //vm memory (MB)
@@ -77,24 +82,25 @@ public class HdfsExample0 {
 			int pesNumber = 1; //number of cpus
 			String vmm = "Xen"; //VMM name
 
-			//create two VMs
-			Vm vm1 = new Vm(vmid, brokerId, mips, pesNumber, ram, bw, size, vmm, new CloudletSchedulerTimeShared());
+			//create three VMs
+			Vm vm1 = new Vm(vmId, brokerId, mips, pesNumber, ram, bw, size, vmm, new CloudletSchedulerTimeShared());
 
-			//the second VM will have twice the priority of VM1 and so it will receive twice the CPU time
-			vmid++;
-			Vm vm2 = new Vm(vmid, brokerId, mips, pesNumber, ram, bw, size, vmm, new CloudletSchedulerTimeShared());
+			vmId++;
+			Vm vm2 = new Vm(vmId, brokerId, mips, pesNumber, ram, bw, size, vmm, new CloudletSchedulerTimeShared());
 
-			vmid++;
-			Vm vm3 = new Vm(vmid, brokerId, mips, pesNumber, ram, bw, size, vmm, new CloudletSchedulerTimeShared());
+			vmId++;
+			Vm vm3 = new Vm(vmId, brokerId, mips, pesNumber, ram, bw, size, vmm, new CloudletSchedulerTimeShared());
 
 			//add the VMs to the vmList
-			vmlist.add(vm1);	// client
+			vmlist.add(vm1);	// Client
 			vmlist.add(vm2);	// Data Node 1
 			vmlist.add(vm3);	// Data Node 2
 
 			//submit vm list to the broker
 			broker.submitVmList(vmlist);
+			// TODO: come posso fare perchè vm1 possa andare solo nel primo datacenter, e vm2 e vm3 per forza nel secondo?
 
+			// TODO: ricorda che i cloudlet devono essere HdfsCloudlets e bisogna assegnarci il requiredFile, che sarebbe il blocco hdfs
 
 			//Fifth step: Create two Cloudlets
 			cloudletList = new ArrayList<Cloudlet>();
@@ -151,68 +157,65 @@ public class HdfsExample0 {
 		}
 	}
 
-	private static Datacenter createDatacenter(String name){
+	private static HdfsDatacenter createDatacenter(String name) throws ParameterException {
 
-		// Here are the steps needed to create a PowerDatacenter:
-		// 1. We need to create a list to store
-		//    our machine
-		List<Host> hostList = new ArrayList<Host>();
+		// 1. Create a list of Hosts inside the Datacenter
+		List<HdfsHost> hostList = new ArrayList<HdfsHost>();
 
-		// 2. A Machine contains one or more PEs or CPUs/Cores.
-		// In this example, it will have only one core.
+		// 2. Each machine has a list of PEs (cores)
 		List<Pe> peList = new ArrayList<Pe>();
 
 		int mips = 1000;
 
-		// 3. Create PEs and add these into a list.
-		peList.add(new Pe(0, new PeProvisionerSimple(mips))); // need to store Pe id and MIPS Rating
+		// 3. Create PEs and add them to a list
+		// in questo caso abbiamo un singolo core per machine
+		peList.add(new Pe(0, new PeProvisionerSimple(mips))); // need to store the Pe id and MIPS Rating
 
-		//4. Create Hosts with its id and list of PEs and add them to the list of machines
+		//4. Create Hosts, each with its own ID and PE list, and add them to the list of machines
 		int hostId=0;
 		int ram = 2048; //host memory (MB)
-		long storage = 1000000; //host storage
+		long storageSize = 1000000; //host storage
+		HarddriveStorage hardDrive = new HarddriveStorage("HDD_0", storageSize);
 		int bw = 10000;
 
 		hostList.add(
-    			new Host(
+    			new HdfsHost(
     				hostId,
     				new RamProvisionerSimple(ram),
     				new BwProvisionerSimple(bw),
-    				storage,
+    				storageSize,
+    				hardDrive,
     				peList,
     				new VmSchedulerTimeShared(peList)
     			)
     		); // This is our first machine
 
-		//create another machine in the Data center
-		List<Pe> peList2 = new ArrayList<Pe>();
+		//create another machine
 
-		/*
-		 ovviamente bisogna creare una nuova peList e aggiungerci un nuovo PE,
-		 nota che non fa niente che l'id è sempre 0, probabilmente perchè è relativo al singolo host
-		*/
+		// ovviamente bisogna creare una nuova peList e aggiungerci un nuovo PE,
+		// nota che non fa niente che l'id è sempre 0, probabilmente perchè è relativo al singolo host
+		List<Pe> peList2 = new ArrayList<Pe>();
 		peList2.add(new Pe(0, new PeProvisionerSimple(mips)));
 
-		// il nuovo host ovviamente non può avere lo stesso id
-		hostId++;
+		// nuova hard drive instance
+		HarddriveStorage hardDrive2 = new HarddriveStorage("HDD_1", storageSize);
+
+		hostId++;	// il nuovo host ovviamente non può avere lo stesso id
 
 		hostList.add(
-    			new Host(
+    			new HdfsHost(
     				hostId,
     				new RamProvisionerSimple(ram),
     				new BwProvisionerSimple(bw),
-    				storage,
+    				storageSize,
+    				hardDrive2,
     				peList2,
     				new VmSchedulerTimeShared(peList2)
     			)
     		); // This is our second machine
 
 
-
-		// 5. Create a DatacenterCharacteristics object that stores the
-		//    properties of a data center: architecture, OS, list of
-		//    Machines, allocation policy: time- or space-shared, time zone
-		//    and its price (G$/Pe time unit).
+		// 5. Create a DatacenterCharacteristics object
 		String arch = "x86";      // system architecture
 		String os = "Linux";          // operating system
 		String vmm = "Xen";
@@ -223,13 +226,17 @@ public class HdfsExample0 {
 		double costPerBw = 0.0;			// the cost of using bw in this resource
 		LinkedList<Storage> storageList = new LinkedList<Storage>();	//we are not adding SAN devices by now
 
+		// penso che questo sia ovviamente necessario, lol
+		storageList.add(hardDrive);
+		storageList.add(hardDrive2);
+
         DatacenterCharacteristics characteristics = new DatacenterCharacteristics(
                 arch, os, vmm, hostList, time_zone, cost, costPerMem, costPerStorage, costPerBw);
 
 		// 6. Finally, we need to create a PowerDatacenter object.
-		Datacenter datacenter = null;
+		HdfsDatacenter datacenter = null;
 		try {
-			datacenter = new Datacenter(name, characteristics, new VmAllocationPolicySimple(hostList), storageList, 0);
+			datacenter = new HdfsDatacenter(name, characteristics, new VmAllocationPolicySimple(hostList), storageList, 0);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -239,11 +246,11 @@ public class HdfsExample0 {
 
 	//We strongly encourage users to develop their own broker policies, to submit vms and cloudlets according
 	//to the specific rules of the simulated scenario
-	private static DatacenterBroker createBroker(){
+	private static HdfsDatacenterBroker createBroker(){
 
-		DatacenterBroker broker = null;
+		HdfsDatacenterBroker broker = null;
 		try {
-			broker = new DatacenterBroker("Broker");
+			broker = new HdfsDatacenterBroker("Broker");
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
