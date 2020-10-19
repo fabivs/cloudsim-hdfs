@@ -11,6 +11,7 @@ import org.cloudbus.cloudsim.lists.VmList;
 import org.cloudbus.cloudsim.core.SimEntity;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class HdfsDatacenterBroker extends DatacenterBroker {
@@ -75,25 +76,37 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
     // Bisogna ora mandare il cloudlet again al DN
     protected void processClientCloudletReturn(SimEvent ev) {
 
-        HdfsCloudlet cloudlet = (HdfsCloudlet) ev.getData();
+        HdfsCloudlet originalCloudlet = (HdfsCloudlet) ev.getData();
 
-        Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Cloudlet ", cloudlet.getCloudletId(),
+        Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Cloudlet ", originalCloudlet.getCloudletId(),
                 " the block has been read, sending it to the Data Node...");
 
+        // find the current highest cloudlet ID, and set this cloudlet's ID to the next available number
+        Iterator<Cloudlet> iter = getCloudletList().iterator();
+        int currentMaxId = 0;
+
+        while(iter.hasNext()){
+            Cloudlet currentCl = iter.next();
+            if(currentCl.getCloudletId() > currentMaxId){
+                currentMaxId = currentCl.getCloudletId();
+            }
+        }
+
+        // non molto elegante, ma dovrebbe funzionare lol, da qualche parte sto metodo lo devo prendere
+        HdfsCloudlet newCloudlet = originalCloudlet.cloneCloudletAssignNewId(originalCloudlet, currentMaxId + 1);
+
         // store the original vm id, so we can keep track of whose block it is in the DN
-        cloudlet.setSourceVmId(cloudlet.getVmId());
+        newCloudlet.setSourceVmId(originalCloudlet.getVmId());
         // set the DN VM as the new VM Id for the cloudlet
-        cloudlet.setVmId(cloudlet.getDestVmId());
+        newCloudlet.setVmId(originalCloudlet.getDestVmId());
 
         // alternativamente si può usare il metodo bind che fa la stessa cosa
         // bindCloudletToVm(cloudlet.getCloudletId(), cloudlet.getVmId());
 
         // add the cloudlet to the list of submitted cloudlets
-        getCloudletList().add(cloudlet);
+        getCloudletList().add(newCloudlet);
 
         // non so se prima settare la VM e poi aggiungere alla CloudletList, o se fare il contrario, vedremo...
-
-        // TODO: cambiare l'Id del cloudlet in qualcosa di diverso
 
         /* ri-eseguiamo questo metodo, che ora troverà il nuovo unbound cloudlet nella lista, e lo invierà
         alla VM appropriata, inoltre settando la posizione del broker uguale a quella del client nella topology,

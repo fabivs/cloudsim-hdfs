@@ -31,6 +31,24 @@ public class HdfsCloudlet extends Cloudlet {
         super(cloudletId, cloudletLength, pesNumber, cloudletFileSize, cloudletOutputSize, utilizationModelCpu, utilizationModelRam, utilizationModelBw, fileList);
     }
 
+    // this method clones the given cloudlet into a new one, with the new given ID
+    // this is necessary because the ID of a cloudlet is a final int
+    // non so se ritornare "Cloudlet" o "HdfsCloudlet", per ora lascio così
+    public HdfsCloudlet cloneCloudletAssignNewId(Cloudlet cl, int newId){
+
+        long cloudletLength = cl.getCloudletLength();
+        int pesNumber = cl.getNumberOfPes();
+        long cloudletFileSize = cl.getCloudletFileSize();
+        long cloudletOutputSize = cl.getCloudletOutputSize();
+        UtilizationModel utilizationModelCpu = cl.getUtilizationModelCpu();
+        UtilizationModel utilizationModelRam = cl.getUtilizationModelRam();
+        UtilizationModel utilizationModelBw = cl.getUtilizationModelBw();
+        List<String> fileList = cl.getRequiredFiles();
+
+        return new HdfsCloudlet(newId, cloudletLength, pesNumber, cloudletFileSize, cloudletOutputSize,
+                utilizationModelCpu, utilizationModelRam, utilizationModelBw, fileList);
+    }
+
     // Getters and Setters
 
     public int getSourceVmId() {

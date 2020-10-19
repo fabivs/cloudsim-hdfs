@@ -223,8 +223,7 @@ public class HdfsDatacenter extends Datacenter {
             // gets the Cloudlet object
             HdfsCloudlet cl = (HdfsCloudlet) ev.getData();
 
-            // checks whether this Cloudlet has finished or not
-            // TODO: controllare questo blocco if
+            // checks if the cloudlet is finished already
             if (cl.isFinished()) {
                 String name = CloudSim.getEntityName(cl.getUserId());
                 Log.printConcatLine(getName(), ": Warning - Cloudlet #", cl.getCloudletId(), " owned by ", name,
@@ -234,9 +233,9 @@ public class HdfsDatacenter extends Datacenter {
 
                 // NOTE: If a Cloudlet has finished, then it won't be processed.
                 // So, if ack is required, this method sends back a result.
-                // If ack is not required, this method don't send back a result.
-                // Hence, this might cause CloudSim to be hanged since waiting
-                // for this Cloudlet back.
+                // If ack is not required, this method doesn't send back a result.
+                // Hence, this might cause CloudSim to hang while waiting
+                // for this Cloudlet to come back.
                 if (ack) {
                     int[] data = new int[3];
                     data[0] = getId();
@@ -244,7 +243,7 @@ public class HdfsDatacenter extends Datacenter {
                     data[2] = CloudSimTags.FALSE;
 
                     // unique tag = operation tag
-                    int tag = CloudSimTags.CLOUDLET_SUBMIT_ACK;
+                    int tag = CloudSimTags.HDFS_CLIENT_CLOUDLET_SUBMIT_ACK;
                     sendNow(cl.getUserId(), tag, data);
                 }
 
@@ -339,7 +338,7 @@ public class HdfsDatacenter extends Datacenter {
             // gets the Cloudlet object
             HdfsCloudlet cl = (HdfsCloudlet) ev.getData();
 
-            // checks whether this Cloudlet has finished or not
+            // checks whether this Cloudlet is finished already
             if (cl.isFinished()) {
                 String name = CloudSim.getEntityName(cl.getUserId());
                 Log.printConcatLine(getName(), ": Warning - Cloudlet #", cl.getCloudletId(), " owned by ", name,
@@ -349,9 +348,9 @@ public class HdfsDatacenter extends Datacenter {
 
                 // NOTE: If a Cloudlet has finished, then it won't be processed.
                 // So, if ack is required, this method sends back a result.
-                // If ack is not required, this method don't send back a result.
-                // Hence, this might cause CloudSim to be hanged since waiting
-                // for this Cloudlet back.
+                // If ack is not required, this method doesn't send back a result.
+                // Hence, this might cause CloudSim hang while waiting
+                // for this Cloudlet to come back.
                 if (ack) {
                     int[] data = new int[3];
                     data[0] = getId();
@@ -359,16 +358,13 @@ public class HdfsDatacenter extends Datacenter {
                     data[2] = CloudSimTags.FALSE;
 
                     // unique tag = operation tag
-                    int tag = CloudSimTags.CLOUDLET_SUBMIT_ACK;
+                    int tag = CloudSimTags.HDFS_DN_CLOUDLET_SUBMIT_ACK;
                     sendNow(cl.getUserId(), tag, data);
                 }
 
-                // prima di rimandare il cloudlet indietro, dobbiamo effettuare il file transfer
-                // (però magari a questo punto di "cloudlet finished" voglio intendere che è finito
-                // anche il file transfer) ?????????
-
-                // ... TODO: tutto questo blocco di codice va visto, non ci capisco un cazzo
-
+                // if the cloudlet is finished already, it should mean that the write for the file was already performed
+                // before, so we shouldn't need to do anything else here
+                // the return tag is a simple CLOUDLET_RETURN, because we don't need to do anything else afterwards
                 sendNow(cl.getUserId(), CloudSimTags.CLOUDLET_RETURN, cl);
 
                 return;
@@ -384,8 +380,6 @@ public class HdfsDatacenter extends Datacenter {
 
             // il tempo necessario per leggere i requiredFiles dal disco
             double fileTransferTime = writeAndPredictTime(cl.getSourceVmId(), cl.getBlockSize());
-
-            // TODO: some catch per gli eventuali problemi se la scrittura del file fallisce (disco pieno o altro)
 
             // troviamo l'host in cui si trova la vm del cloudlet
             Host host = getVmAllocationPolicy().getHost(vmId, userId);
@@ -410,7 +404,7 @@ public class HdfsDatacenter extends Datacenter {
                 data[2] = CloudSimTags.TRUE;
 
                 // unique tag = operation tag
-                int tag = CloudSimTags.CLOUDLET_SUBMIT_ACK;
+                int tag = CloudSimTags.HDFS_DN_CLOUDLET_SUBMIT_ACK;
                 sendNow(cl.getUserId(), tag, data);
             }
         } catch (ClassCastException c) {
@@ -420,7 +414,6 @@ public class HdfsDatacenter extends Datacenter {
             Log.printLine(getName() + ".processCloudletSubmit(): " + "Exception error.");
             e.printStackTrace();
         }
-
 
         // questo metodo è quello che invia i Cloudlet return
         checkCloudletCompletion();
@@ -473,7 +466,7 @@ public class HdfsDatacenter extends Datacenter {
 
             // time is only equal 0.0 if the addFile failed for some reason, so if the addFile was successful, we break
             // NOTE: if a file with the same name is already present, the addFile will fail and return 0.0
-            if (time != 0.0){
+            if (time > 0.0){
                 break;
             }
         }
