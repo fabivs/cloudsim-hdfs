@@ -16,7 +16,7 @@ import java.util.List;
 
 public class HdfsHost extends Host {
 
-    private HarddriveStorage actualStorage;
+    private HarddriveStorage properStorage;
 
     /**
      * Instantiates a new host.
@@ -32,14 +32,14 @@ public class HdfsHost extends Host {
     public HdfsHost(int id, RamProvisioner ramProvisioner, BwProvisioner bwProvisioner, long storage,
                     HarddriveStorage hddStorage, List<? extends Pe> peList, VmScheduler vmScheduler) {
         super(id, ramProvisioner, bwProvisioner, storage, peList, vmScheduler);
-        actualStorage = hddStorage;
+        properStorage = hddStorage;
     }
 
-    public HarddriveStorage getActualStorage() {
-        return actualStorage;
+    public HarddriveStorage getProperStorage() {
+        return properStorage;
     }
 
-    public void setActualStorage(HarddriveStorage actualStorage) {
-        this.actualStorage = actualStorage;
+    public void setProperStorage(HarddriveStorage properStorage) {
+        this.properStorage = properStorage;
     }
 }

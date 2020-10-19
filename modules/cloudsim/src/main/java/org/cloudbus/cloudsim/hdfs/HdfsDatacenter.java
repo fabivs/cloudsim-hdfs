@@ -10,6 +10,7 @@ import java.util.List;
 
 public class HdfsDatacenter extends Datacenter {
 
+    private int fileNameCounter;
 
     /**
      * Allocates a new Datacenter object.
@@ -34,6 +35,8 @@ public class HdfsDatacenter extends Datacenter {
     public HdfsDatacenter(String name, DatacenterCharacteristics characteristics, VmAllocationPolicy vmAllocationPolicy,
                           List<Storage> storageList, double schedulingInterval) throws Exception {
         super(name, characteristics, vmAllocationPolicy, storageList, schedulingInterval);
+
+        fileNameCounter = 0;
     }
 
     @Override
@@ -303,8 +306,26 @@ public class HdfsDatacenter extends Datacenter {
         checkCloudletCompletion();
     }
 
-    // il metodo per il Data Node che deve scrivere il file su disco
-    // per scrivere il file semplicemente creiamo un nuovo file object delle dimensioni giuste e lo "scriviamo" su disco
+    @Override
+    protected double predictFileTransferTime(List<String> requiredFiles) {
+        //return super.predictFileTransferTime(requiredFiles);
+
+        double time = 0.0;
+
+        Iterator<String> iter = requiredFiles.iterator();
+        while (iter.hasNext()) {
+            String fileName = iter.next();
+            for (int i = 0; i < getStorageList().size(); i++) {
+                Storage tempStorage = getStorageList().get(i);
+                File tempFile = tempStorage.getFile(fileName);
+                if (tempFile != null) {
+                    time += tempFile.getTransactionTime();
+                    break;
+                }
+            }
+        }
+        return time;
+    }
 
     // il metodo predictFileTransferTime() viene sostituito con un metodo che scrive il file su disco e ritorna il tempo
     // stimato per effettuare l'operazione
@@ -411,12 +432,14 @@ public class HdfsDatacenter extends Datacenter {
      * blocco
      */
     protected double writeAndPredictTime(int sourceVmId, int blockSize) {
+
         double time = 0.0;
 
-        // random file name
-        // TODO: this method is obviously flawed, multiple files could end up with the same file name
-        int randomNumber = (int) (Math.random() * 1000);
-        String fileName = "HdfsBlock_" + randomNumber;
+        // increasing file name
+        // turns out to be useful for replication, because the method addFile() won't add a file with the same name
+        // in the same drive, which is exactly what we want (just make sure replicas have the same fileName as the original)
+        String fileName = "HdfsBlock_" + fileNameCounter;
+        fileNameCounter++;
 
         // create a new instance of File
         File hdfsBlock = null;
@@ -434,19 +457,22 @@ public class HdfsDatacenter extends Datacenter {
             hdfsBlock.getFileAttribute().setOwnerName(ownerName);
         }
 
-        // the file "hdfsBlock" now has a random file name, a file size, and the owner vm id (as a string)
+        // the file "hdfsBlock" now has a specific file name, a file size, and the owner vm id (as a string)
+        // now we add the file to the storage obj inside this Databacenter, and we estimate the required time
+        // (this is all done automatically by the method addFile())
 
-        // now we add the file to the storage inside this Database, and we estimate the required time
+        Storage tempStorage = null;
 
         // cycle through all the available drives in the Database
         for (int i = 0; i < getStorageList().size(); i++) {
 
             // get the drive i
-            Storage tempStorage = getStorageList().get(i);
+            tempStorage = getStorageList().get(i);
             // store the file and get the estimated time
             time += tempStorage.addFile(hdfsBlock);
 
             // time is only equal 0.0 if the addFile failed for some reason, so if the addFile was successful, we break
+            // NOTE: if a file with the same name is already present, the addFile will fail and return 0.0
             if (time != 0.0){
                 break;
             }
@@ -454,6 +480,9 @@ public class HdfsDatacenter extends Datacenter {
 
         if (time == 0.0){
             Log.printLine(getName() + ".writeAndPredictTime(): " + "Couldn't add the file to any storage unit.");
+        } else {
+            Log.printLine(getName() + ".writeAndPredictTime(): " + "Successfully added file as " + hdfsBlock.getName()
+            + " inside drive " + tempStorage.getName());
         }
 
         return time;

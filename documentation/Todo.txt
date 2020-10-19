@@ -1,19 +1,21 @@
-TODOs:
-
 Features:
 - file transfer simulation
 - replication
 
-File transfer:
-- completare il metodo writeAndPredictTime() in HdfsDatacenter (vedi i commenti inside it)
-- l'host deve avere come storage un actual instance di storage, invece che solo un long, controllare poi che funzionino
-  correttamente i metodi predictFileTransferTime() in Datacenter e writeAndPredictTime() in HdfsDatacenter
-- controllare i blocchi if nei due metodi: processClientCloudletSubmit() e processDNCloudletSubmit()
 
-Bugs & Issues:
+File transfer:
+
+- controllare i blocchi "if" nei due metodi: processClientCloudletSubmit() e processDNCloudletSubmit()
+
 - il cloudlet lato Client prima termina (usando la bandwidth), e poi viene inviato al DN, l'invio al DN deve avvenire
   subito dopo il metodo predictFileTransferTime(), così che i due cloudlets usino bandwidth allo stesso tempo, ma dopo
   l'iniziale network delay, dato dal metodo send(). Almeno così sarebbe preferibile e più realistico. Al momento il
   cloudlet è inviato alla DN dal broker quando riceve il return del cloudlet dal client.
+	=> si può fixare mettendo una send dopo il delay di predictFileTransferTime(), che attiva il cloudlet per
+	DN, dopodichè rimetto lo standard CLOUDLET_RETURN alla fine, quindi praticamente prendo il tag speciale
+	che c'è già, e lo invio dopo il delay di lettura del file, poi re-inserisco il tag standard al delay
+	del transfer time + cloudlet execution, come già implementato.
+
 - cambiare l'id del cloudlet prima che venga passato al DN
+
 - creare un try-catch block intorno al codice che scrive il file su disco, per gestire eventuali errori
