@@ -15,3 +15,22 @@ File transfer:
     I cloudlets del client spawnano quelli sui DN ma poi terminano per fatti loro subito.
     => se necessario ricontrollare come avviene la catena dei vari send tra HdfsDatacenter e HdfsDatacenterBroker per
     per quanto riguarda il cloudlet che legge e poi l'invio al Data Node del cloudlet che scrive
+
+- migliorare la scalabilità del codice: creare un metodo che genera automaticamente i blocchi, creare un metodo
+  che setta chi sono i clients e chi sono i nodi, in modo che poi vengano assegnati da soli automaticamente a 
+  datacenters diversi, aggiungere anche i due metodi negli altri examples che creano automaticamente una lista
+  di vms e una di cloudlets, ricorda che in quella dei cloudlets devi aggiungere che vengono settati gli IDs delle
+  vms di destinazione!
+
+- vedere cosa altro va "automatizzato", invece che settato manualmente in HdfsExample0 ... vedi il secondo punto di
+  "Ideas"
+
+IDEAS:
+- aggiungere un sistema di tags per le VMs in modo che possiamo settare chi è un client e chi è un data node, e poi il
+  resto viene gestito dal broker correttamente in automatico, e poi il broker nei logs può anche dire "client bla bla"
+  "data node bla bla" perchè sa chi sono i clients e chi sono i data nodes
+
+- idealmente in HDFS c'è proprio un ente a parte che gestisce dove vanno scritti i files, magari dovrei implementare
+  quello invece che far passare tutto per il broker, che non è realistico. Sarebbe come una sorta di broker secondario
+  a cui il broker primario chiede dove andare a scrivere i files, e in questo modo posso eliminare il fatto che al
+  momento devo dire io a prescindere quali sono le VMs di destinazione
