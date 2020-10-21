@@ -11,6 +11,7 @@ package org.cloudbus.cloudsim.examples;
 
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
+import org.cloudbus.cloudsim.hdfs.HdfsCloudlet;
 import org.cloudbus.cloudsim.hdfs.HdfsDatacenter;
 import org.cloudbus.cloudsim.hdfs.HdfsDatacenterBroker;
 import org.cloudbus.cloudsim.hdfs.HdfsHost;
@@ -112,35 +113,52 @@ public class HdfsExample0 {
 			long outputSize = 300;
 			UtilizationModel utilizationModel = new UtilizationModelFull();
 
+			int blockSize = 10000;
+
 			// I'll make two blocks to transfer from vm1 to vm2 and from vm1 to vm3
-			File block1 = new File("block1", 1000);
-			File block2 = new File("block2", 1000);
+			File block1 = new File("block1", blockSize);
+			File block2 = new File("block2", blockSize);
 
-			// ??? Qui non so proprio che cavolo fare
+			// We have to store the files inside the drives of Datacenter 0 first, because the client will read them from there
+			datacenter0.addFile(block1);
+			datacenter0.addFile(block2);
 
-			Cloudlet cloudlet1 = new Cloudlet(id, length, pesNumber, fileSize, outputSize, utilizationModel, utilizationModel, utilizationModel);
+			// We have to make a list of strings for the "requiredFiles" field inside the HdfsCloudlet constructor
+			List<String> blockList1 = new ArrayList<String>();
+			blockList1.add(block1.getName());
+
+			List<String> blockList2 = new ArrayList<String>();
+			blockList2.add(block2.getName());
+
+			// Finally we can create the cloudlets
+			HdfsCloudlet cloudlet1 = new HdfsCloudlet(id, length, pesNumber, fileSize, outputSize, utilizationModel,
+					utilizationModel, utilizationModel, blockList1, blockSize);
 			cloudlet1.setUserId(brokerId);
 
 			id++;
-			Cloudlet cloudlet2 = new Cloudlet(id, length, pesNumber, fileSize, outputSize, utilizationModel, utilizationModel, utilizationModel);
+			HdfsCloudlet cloudlet2 = new HdfsCloudlet(id, length, pesNumber, fileSize, outputSize, utilizationModel,
+					utilizationModel, utilizationModel, blockList2, blockSize);
 			cloudlet2.setUserId(brokerId);
 
-			//add the cloudlets to the list
+			// set the destination vm id for the cloudlets
+			// queste saranno le VM di destinazione in cui vanno scritti i blocchi HDFS
+			cloudlet1.setDestVmId(vm2.getId());
+			cloudlet2.setDestVmId(vm3.getId());
+
+			// add the cloudlets to the list
 			cloudletList.add(cloudlet1);
 			cloudletList.add(cloudlet2);
 
-			//submit cloudlet list to the broker
+			// submit cloudlet list to the broker
 			broker.submitCloudletList(cloudletList);
 
-
-			//bind the cloudlets to the vms. This way, the broker
-			// will submit the bound cloudlets only to the specific VM
+			// bind the cloudlets to the vms, in questo caso entrambi vanno eseguiti sulla vm1
+			// che è la vm del Client che legge i files
 			broker.bindCloudletToVm(cloudlet1.getCloudletId(),vm1.getId());
-			broker.bindCloudletToVm(cloudlet2.getCloudletId(),vm2.getId());
+			broker.bindCloudletToVm(cloudlet2.getCloudletId(),vm1.getId());
 
 			// Sixth step: Starts the simulation
 			CloudSim.startSimulation();
-
 
 			// Final step: Print results when simulation is over
 			List<Cloudlet> newList = broker.getCloudletReceivedList();
@@ -174,7 +192,7 @@ public class HdfsExample0 {
 		//4. Create Hosts, each with its own ID and PE list, and add them to the list of machines
 		int hostId=0;
 		int ram = 2048; //host memory (MB)
-		long storageSize = 1000000; //host storage
+		long storageSize = 100000; //host storage
 		HarddriveStorage hardDrive = new HarddriveStorage("HDD_0", storageSize);
 		int bw = 10000;
 

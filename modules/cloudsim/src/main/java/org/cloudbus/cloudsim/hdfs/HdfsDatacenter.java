@@ -249,7 +249,7 @@ public class HdfsDatacenter extends Datacenter {
 
                 // Cambiamento del tag: in modo che il broker sa che è tornato il cloudlet che ha letto il file,
                 // ora può inviare il cloudlet che scriverà il file alla vm del Data Node
-                sendNow(cl.getUserId(), CloudSimTags.HDFS_CLIENT_CLOUDLET_RETURN, cl);
+                sendNow(cl.getUserId(), CloudSimTags.CLOUDLET_RETURN, cl);
 
                 return;
             }
@@ -264,6 +264,8 @@ public class HdfsDatacenter extends Datacenter {
 
             // il tempo necessario per leggere i requiredFiles dal disco
             double fileTransferTime = predictFileTransferTime(cl.getRequiredFiles());
+
+            send(cl.getUserId(), fileTransferTime, CloudSimTags.HDFS_CLIENT_CLOUDLET_RETURN, cl);
 
             // troviamo l'host in cui si trova la vm del cloudlet
             Host host = getVmAllocationPolicy().getHost(vmId, userId);
@@ -293,10 +295,10 @@ public class HdfsDatacenter extends Datacenter {
             }
 
         } catch (ClassCastException c) {
-            Log.printLine(getName() + ".processCloudletSubmit(): " + "ClassCastException error.");
+            Log.printLine(getName() + ".processClientCloudletSubmit(): " + "ClassCastException error.");
             c.printStackTrace();
         } catch (Exception e) {
-            Log.printLine(getName() + ".processCloudletSubmit(): " + "Exception error.");
+            Log.printLine(getName() + ".processClientCloudletSubmit(): " + "Exception error.");
             e.printStackTrace();
         }
 
@@ -408,10 +410,10 @@ public class HdfsDatacenter extends Datacenter {
                 sendNow(cl.getUserId(), tag, data);
             }
         } catch (ClassCastException c) {
-            Log.printLine(getName() + ".processCloudletSubmit(): " + "ClassCastException error.");
+            Log.printLine(getName() + ".processDNCloudletSubmit(): " + "ClassCastException error.");
             c.printStackTrace();
         } catch (Exception e) {
-            Log.printLine(getName() + ".processCloudletSubmit(): " + "Exception error.");
+            Log.printLine(getName() + ".processDNCloudletSubmit(): " + "Exception error.");
             e.printStackTrace();
         }
 

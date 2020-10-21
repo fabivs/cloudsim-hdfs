@@ -16,6 +16,8 @@ import java.util.List;
 
 public class HdfsDatacenterBroker extends DatacenterBroker {
 
+    protected int currentCloudletMaxId;
+
     /**
      * Created a new DatacenterBroker object.
      *
@@ -26,6 +28,7 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
      */
     public HdfsDatacenterBroker(String name) throws Exception {
         super(name);
+        currentCloudletMaxId = 0;
     }
 
     @Override
@@ -79,21 +82,10 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
         HdfsCloudlet originalCloudlet = (HdfsCloudlet) ev.getData();
 
         Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Cloudlet ", originalCloudlet.getCloudletId(),
-                " the block has been read, sending it to the Data Node...");
-
-        // find the current highest cloudlet ID, and set this cloudlet's ID to the next available number
-        Iterator<Cloudlet> iter = getCloudletList().iterator();
-        int currentMaxId = 0;
-
-        while(iter.hasNext()){
-            Cloudlet currentCl = iter.next();
-            if(currentCl.getCloudletId() > currentMaxId){
-                currentMaxId = currentCl.getCloudletId();
-            }
-        }
+                ": the block has been read, sending it to the Data Node...");
 
         // non molto elegante, ma dovrebbe funzionare lol, da qualche parte sto metodo lo devo prendere
-        HdfsCloudlet newCloudlet = originalCloudlet.cloneCloudletAssignNewId(originalCloudlet, currentMaxId + 1);
+        HdfsCloudlet newCloudlet = originalCloudlet.cloneCloudletAssignNewId(originalCloudlet, currentCloudletMaxId + 1);
 
         // store the original vm id, so we can keep track of whose block it is in the DN
         newCloudlet.setSourceVmId(originalCloudlet.getVmId());
@@ -150,6 +142,7 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
             cloudlet.setVmId(vm.getId());
             sendNow(getVmsToDatacentersMap().get(vm.getId()), CloudSimTags.HDFS_CLIENT_CLOUDLET_SUBMIT, cloudlet);
             cloudletsSubmitted++;
+            currentCloudletMaxId = Math.max(cloudlet.getCloudletId(), currentCloudletMaxId);
             vmIndex = (vmIndex + 1) % getVmsCreatedList().size();
             getCloudletSubmittedList().add(cloudlet);
             successfullySubmitted.add(cloudlet);
@@ -191,6 +184,7 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
             sendNow(getVmsToDatacentersMap().get(vm.getId()), CloudSimTags.HDFS_DN_CLOUDLET_SUBMIT, cloudlet);
 
             cloudletsSubmitted++;
+            currentCloudletMaxId = Math.max(cloudlet.getCloudletId(), currentCloudletMaxId);
             vmIndex = (vmIndex + 1) % getVmsCreatedList().size();
             getCloudletSubmittedList().add(cloudlet);
             successfullySubmitted.add(cloudlet);

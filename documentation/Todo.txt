@@ -5,16 +5,13 @@ Features:
 
 File transfer:
 
-- scrivere il primo Hdfs Example file per testare (non dimenticare la network topology!!)
+- aggiungere la network topology a HdfsExample0
 
 - nell'example, fare in modo che una vm viene per forza assegnata nel primo datacenter e le altre vm nel secondo
   datacenter, in modo che posso avere un datacenter per il client e uno per le vms
 
-- il cloudlet lato Client prima termina (usando la bandwidth), e poi viene inviato al DN, l'invio al DN deve avvenire
-  subito dopo il metodo predictFileTransferTime(), così che i due cloudlets usino bandwidth allo stesso tempo, ma dopo
-  l'iniziale network delay, dato dal metodo send(). Almeno così sarebbe preferibile e più realistico. Al momento il
-  cloudlet è inviato alla DN dal broker quando riceve il return del cloudlet dal client.
-	=> si può fixare mettendo una send dopo il delay di predictFileTransferTime(), che attiva il cloudlet per
-	DN, dopodichè rimetto lo standard CLOUDLET_RETURN alla fine, quindi praticamente prendo il tag speciale
-	che c'è già, e lo invio dopo il delay di lettura del file, poi re-inserisco il tag standard al delay
-	del transfer time + cloudlet execution, come già implementato.
+- controllare che i tempi dei cloudlets abbiano senso => perchè i due cloudlets del client terminano molto dopo quelli
+    dei Data Nodes? li aspettano? pensavo di aver rimosso che li aspettassero, dovrebbero essere indipendenti!
+    I cloudlets del client spawnano quelli sui DN ma poi terminano per fatti loro subito.
+    => se necessario ricontrollare come avviene la catena dei vari send tra HdfsDatacenter e HdfsDatacenterBroker per
+    per quanto riguarda il cloudlet che legge e poi l'invio al Data Node del cloudlet che scrive

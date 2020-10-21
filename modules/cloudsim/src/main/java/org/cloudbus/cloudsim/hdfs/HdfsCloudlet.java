@@ -27,14 +27,16 @@ public class HdfsCloudlet extends Cloudlet {
 
     public HdfsCloudlet(int cloudletId, long cloudletLength, int pesNumber, long cloudletFileSize, long cloudletOutputSize,
                         UtilizationModel utilizationModelCpu, UtilizationModel utilizationModelRam, UtilizationModel utilizationModelBw,
-                        List<String> fileList) {
+                        List<String> fileList, int blockSize) {
         super(cloudletId, cloudletLength, pesNumber, cloudletFileSize, cloudletOutputSize, utilizationModelCpu, utilizationModelRam, utilizationModelBw, fileList);
+        this.blockSize = blockSize;
     }
 
     // this method clones the given cloudlet into a new one, with the new given ID
     // this is necessary because the ID of a cloudlet is a final int
-    // non so se ritornare "Cloudlet" o "HdfsCloudlet", per ora lascio così
-    public HdfsCloudlet cloneCloudletAssignNewId(Cloudlet cl, int newId){
+
+    // NOTE: non sono ancora sicuro di aver copiato tutti i fields, potrebbe mancarne qualcuno ancora
+    public HdfsCloudlet cloneCloudletAssignNewId(HdfsCloudlet cl, int newId){
 
         long cloudletLength = cl.getCloudletLength();
         int pesNumber = cl.getNumberOfPes();
@@ -44,9 +46,16 @@ public class HdfsCloudlet extends Cloudlet {
         UtilizationModel utilizationModelRam = cl.getUtilizationModelRam();
         UtilizationModel utilizationModelBw = cl.getUtilizationModelBw();
         List<String> fileList = cl.getRequiredFiles();
+        int blockSize = cl.getBlockSize();
 
-        return new HdfsCloudlet(newId, cloudletLength, pesNumber, cloudletFileSize, cloudletOutputSize,
-                utilizationModelCpu, utilizationModelRam, utilizationModelBw, fileList);
+        HdfsCloudlet newCl = new HdfsCloudlet(newId, cloudletLength, pesNumber, cloudletFileSize, cloudletOutputSize,
+                utilizationModelCpu, utilizationModelRam, utilizationModelBw, fileList, blockSize);
+
+        // set the user Id, because it's not part of the constructor
+        int userId = cl.getUserId();
+        newCl.setUserId(userId);
+
+        return newCl;
     }
 
     // Getters and Setters
