@@ -36,7 +36,7 @@ public class HdfsCloudlet extends Cloudlet {
     // this is necessary because the ID of a cloudlet is a final int
 
     // NOTE: non sono ancora sicuro di aver copiato tutti i fields, potrebbe mancarne qualcuno ancora
-    public HdfsCloudlet cloneCloudletAssignNewId(HdfsCloudlet cl, int newId){
+    public static HdfsCloudlet cloneCloudletAssignNewId(HdfsCloudlet cl, int newId){
 
         long cloudletLength = cl.getCloudletLength();
         int pesNumber = cl.getNumberOfPes();

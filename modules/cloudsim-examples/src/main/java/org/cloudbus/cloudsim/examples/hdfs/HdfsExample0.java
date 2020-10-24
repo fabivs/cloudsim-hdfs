@@ -7,7 +7,7 @@
  * Copyright (c) 2009, The University of Melbourne, Australia
  */
 
-package org.cloudbus.cloudsim.examples;
+package org.cloudbus.cloudsim.examples.hdfs;
 
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
+
+import static org.cloudbus.cloudsim.examples.hdfs.utils.HdfsUtils.*;
 
 
 /**
@@ -59,13 +61,30 @@ public class HdfsExample0 {
 
 			// Initialize the CloudSim library
 			CloudSim.init(num_user, calendar, trace_flag);
+			
+			// set the required values to create a datacenter
+			int[] datacenterParameters = new int[8];
+
+			// values for PEs
+			datacenterParameters[0] = 1000;		// mips (performance) of a single PE
+			datacenterParameters[1] = 1;		// number of PEs per Host
+
+			// values for Hosts
+			datacenterParameters[2] = 2;		// number of Hosts (in totale nel Datacenter)
+			datacenterParameters[3] = 2048;		// amount of RAM for each Host
+			datacenterParameters[4] = 100000;	// amount of Storage assigned to each Host
+			datacenterParameters[5] = 10000;	// amount of Bandwidth assigned to each Host
+
+			// values for Storage
+			datacenterParameters[6] = 2;		// number of Hard Drives in the Datacenter
+			datacenterParameters[7] = 100000;	// capacity of each Hard Drive
 
 			// Second step: Create Datacenters
 			@SuppressWarnings("unused")
 			// Client datacenter
-			HdfsDatacenter datacenter0 = createDatacenter("Datacenter_0");
+			HdfsDatacenter datacenter0 = createDatacenter("Datacenter_0", datacenterParameters);
 			// Data Nodes datacenter
-			HdfsDatacenter datacenter1 = createDatacenter("Datacenter_1");
+			HdfsDatacenter datacenter1 = createDatacenter("Datacenter_1", datacenterParameters);
 
 			//Third step: Create a Broker (ne serve solo uno perchè abbiamo un solo Client)
 			HdfsDatacenterBroker broker = createBroker();
@@ -175,6 +194,68 @@ public class HdfsExample0 {
 		}
 	}
 
+
+	/**
+	 * Creates a Datacenter
+	 * @param name name of the datacenter
+	 * @param requiredValues an array of 8 integers, which represent, in order:
+	 *                       mips performance for a PE, number of PEs,
+	 *                       number of Hosts, host RAM, host allocated Storage, host Bandwidth,
+	 *                       number of HDDs, size of each HDD
+	 * @return the datacenter object
+	 * @throws ParameterException
+	 */
+	private static HdfsDatacenter createDatacenter(String name, int[] requiredValues) throws ParameterException{
+
+		//List<HdfsHost> hostList;
+		//List<Pe> peList;
+
+		// values for Pes
+		int mips = requiredValues[0];
+		int pesNum = requiredValues[1];
+
+		// values for Hosts
+		int hostNum = requiredValues[2];
+		int hostRam = requiredValues[3];
+		int hostStorageSize = requiredValues[4];
+		int hostBw = requiredValues[5];
+
+		// values for Storage
+		int hddNumber = requiredValues[6];
+		int hddSize = requiredValues[7];
+
+		// questo metodo, se tutto va bene, mi deve ritornare una lista di Hosts, con Id crescente, ognuno
+		// con la propria Pe list (ognuno deve avere una istanza diversa di Pe List)
+		List<HdfsHost> hostList = createHostList(hostNum, hostRam, hostStorageSize, hostBw, pesNum, mips);
+
+		// DatacenterCharacteristics
+		String arch = "x86";			// system architecture
+		String os = "Linux";          	// operating system
+		String vmm = "Xen";				// virtual machine manager
+		double time_zone = 10.0;        // time zone this resource located
+		double cost = 3.0;              // the cost of using processing in this resource
+		double costPerMem = 0.05;		// the cost of using memory in this resource
+		double costPerStorage = 0.001;	// the cost of using storage in this resource
+		double costPerBw = 0.0;			// the cost of using bw in this resource
+
+		LinkedList<Storage> storageList = createStorageList(hddNumber, hddSize);
+
+		DatacenterCharacteristics characteristics = new DatacenterCharacteristics(
+				arch, os, vmm, hostList, time_zone, cost, costPerMem, costPerStorage, costPerBw);
+
+		// create and return the Datacenter object
+		HdfsDatacenter datacenter = null;
+		try {
+			datacenter = new HdfsDatacenter(name, characteristics, new VmAllocationPolicySimple(hostList), storageList, 0);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return datacenter;
+
+	}
+
+	/*
 	private static HdfsDatacenter createDatacenter(String name) throws ParameterException {
 
 		// 1. Create a list of Hosts inside the Datacenter
@@ -193,7 +274,6 @@ public class HdfsExample0 {
 		int hostId=0;
 		int ram = 2048; //host memory (MB)
 		long storageSize = 100000; //host storage
-		HarddriveStorage hardDrive = new HarddriveStorage("HDD_0", storageSize);
 		int bw = 10000;
 
 		hostList.add(
@@ -202,7 +282,6 @@ public class HdfsExample0 {
     				new RamProvisionerSimple(ram),
     				new BwProvisionerSimple(bw),
     				storageSize,
-    				hardDrive,
     				peList,
     				new VmSchedulerTimeShared(peList)
     			)
@@ -215,8 +294,6 @@ public class HdfsExample0 {
 		List<Pe> peList2 = new ArrayList<Pe>();
 		peList2.add(new Pe(0, new PeProvisionerSimple(mips)));
 
-		// nuova hard drive instance
-		HarddriveStorage hardDrive2 = new HarddriveStorage("HDD_1", storageSize);
 
 		hostId++;	// il nuovo host ovviamente non può avere lo stesso id
 
@@ -226,7 +303,6 @@ public class HdfsExample0 {
     				new RamProvisionerSimple(ram),
     				new BwProvisionerSimple(bw),
     				storageSize,
-    				hardDrive2,
     				peList2,
     				new VmSchedulerTimeShared(peList2)
     			)
@@ -243,6 +319,10 @@ public class HdfsExample0 {
 		double costPerStorage = 0.001;	// the cost of using storage in this resource
 		double costPerBw = 0.0;			// the cost of using bw in this resource
 		LinkedList<Storage> storageList = new LinkedList<Storage>();	//we are not adding SAN devices by now
+
+		// creo gli hard drives
+		HarddriveStorage hardDrive = new HarddriveStorage("HDD_0", storageSize);
+		HarddriveStorage hardDrive2 = new HarddriveStorage("HDD_1", storageSize);
 
 		// penso che questo sia ovviamente necessario, lol
 		storageList.add(hardDrive);
@@ -261,6 +341,7 @@ public class HdfsExample0 {
 
 		return datacenter;
 	}
+	 */
 
 	//We strongly encourage users to develop their own broker policies, to submit vms and cloudlets according
 	//to the specific rules of the simulated scenario

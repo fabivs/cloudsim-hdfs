@@ -16,23 +16,24 @@ import java.util.List;
 
 public class HdfsHost extends Host {
 
+    // TODO: this is, for now, completely useless
+    // Il motivo: a un Host, ora come ora, non è assegnato uno o più specifici Hard Drives,
+    // sono assegnati al Datacenter e ogni Host ha soltanto un numero che indica la capacità di storage
+    // lascio questo field qui per ora nel caso possa servire in futuro
     private HarddriveStorage properStorage;
 
     /**
-     * Instantiates a new host.
-     *
-     * @param id             the host id
-     * @param ramProvisioner the ram provisioner
-     * @param bwProvisioner  the bw provisioner
-     * @param storage        the storage capacity
-     * @param hddStorage     the simulated hard drive (should make "storage" redundant)
-     * @param peList         the host's PEs list
-     * @param vmScheduler    the vm scheduler
+     * DON'T USE THIS CONSTRUCTOR FOR NOW!!
      */
     public HdfsHost(int id, RamProvisioner ramProvisioner, BwProvisioner bwProvisioner, long storage,
                     HarddriveStorage hddStorage, List<? extends Pe> peList, VmScheduler vmScheduler) {
         super(id, ramProvisioner, bwProvisioner, storage, peList, vmScheduler);
         properStorage = hddStorage;
+    }
+
+    public HdfsHost(int id, RamProvisioner ramProvisioner, BwProvisioner bwProvisioner, long storage,
+                    List<? extends Pe> peList, VmScheduler vmScheduler) {
+        super(id, ramProvisioner, bwProvisioner, storage, peList, vmScheduler);
     }
 
     public HarddriveStorage getProperStorage() {
