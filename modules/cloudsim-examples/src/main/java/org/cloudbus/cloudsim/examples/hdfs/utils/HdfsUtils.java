@@ -16,7 +16,7 @@ public final class HdfsUtils {
     // crea una lista di Vms da submittare al broker
     // NOTE: vmm is always "Xen"
     public static List<Vm> createVmList(int count, int userId, int mips, int pesNumber, int ram, long bw, long size,
-                                        String vmm, CloudletScheduler cloudletScheduler){
+                                        String vmm, String cloudletSchedulerType){
 
         LinkedList<Vm> list = new LinkedList<Vm>();
 
@@ -26,6 +26,9 @@ public final class HdfsUtils {
         // funziona così: vm è un array di dimensione "vms", nel ciclo riempiamo questo array di tante nuove vm,
         // ognuna di queste vm è anche aggiunta alla lista "list", che è ritornata alla fine, fuori dal ciclo
         for(int i = 0; i < count; i++){
+
+            CloudletScheduler cloudletScheduler =
+                    (cloudletSchedulerType.equals("Time")) ? new CloudletSchedulerTimeShared() : new CloudletSchedulerSpaceShared();
 
             vm[i] = new Vm(i, userId, mips, pesNumber, ram, bw, size, vmm, cloudletScheduler);
 
@@ -39,7 +42,7 @@ public final class HdfsUtils {
     }
 
     // crea una lista di Cloudlets da submittare al broker
-    public static List<HdfsCloudlet> createCloudletList(int userId, int count, long length, long fileSize, long outputSize,
+    public static List<HdfsCloudlet> createCloudletList(int userId, int count, int destId, long length, long fileSize, long outputSize,
                                                         int pesNumber, UtilizationModel utilizationModel, List<String> blockList, int blockSize){
 
         LinkedList<HdfsCloudlet> list = new LinkedList<HdfsCloudlet>();
@@ -51,6 +54,7 @@ public final class HdfsUtils {
                     utilizationModel, utilizationModel, blockList, blockSize);
             // setting the owner of these Cloudlets
             cloudlet[i].setUserId(userId);
+            cloudlet[i].setDestVmId(destId);
             list.add(cloudlet[i]);
         }
 

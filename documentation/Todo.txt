@@ -24,7 +24,6 @@ File transfer:
     - creare un metodo che genera automaticamente i data blocks
     - creare un metodo che setta chi sono i clients e chi sono i data nodes (in modo che poi vengano assegnati da soli
     a datacenters diversi
-    - creare un metodo che genera automaticamente la lista delle VMs
     - creare un metodo che genera automaticamente la lista dei cloudlets (in cui vanno settati anche i "destVmId")
 
 IDEAS:

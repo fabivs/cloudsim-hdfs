@@ -96,17 +96,17 @@ public class HdfsExample0 {
 			// Fourth step: Create VMs
 
 			// VM PARAMETERS
-			int vmCount = 3;	// number of vms to be created
-			int vmMips = 250;
-			int vmPesNumber = 1;
-			int vmRam = 2048;
-			long vmBw = 1000;
-			long vmSize = 10000;
-			String vmm = "Xen";
-			CloudletScheduler cloudletScheduler = new CloudletSchedulerTimeShared(); // alternativamente può essere Space Shared
+			int vmCount = 3;		// number of vms to be created
+			int vmMips = 250;		// mips performance of a VM
+			int vmPesNumber = 1;	// number of PEs
+			int vmRam = 2048;		// vm memory (MB)
+			long vmBw = 1000;		// available bandwidth for a VM
+			long vmSize = 10000;	// image size (MB)
+			String vmm = "Xen";		// name of the Vm manager
+			String cloudletSchedulerType = "Time"; // either "Time" shared or "Space" shared
 
 			// NOTE: this will create all identical vms, to create VMs with different parameters, run this method multiple times
-			vmList = createVmList(vmCount, brokerId, vmMips, vmPesNumber, vmRam, vmBw, vmSize, vmm, cloudletScheduler);
+			vmList = createVmList(vmCount, brokerId, vmMips, vmPesNumber, vmRam, vmBw, vmSize, vmm, cloudletSchedulerType);
 
 			//submit vm list to the broker
 			broker.submitVmList(vmList);
