@@ -15,9 +15,6 @@ import org.cloudbus.cloudsim.hdfs.HdfsCloudlet;
 import org.cloudbus.cloudsim.hdfs.HdfsDatacenter;
 import org.cloudbus.cloudsim.hdfs.HdfsDatacenterBroker;
 import org.cloudbus.cloudsim.hdfs.HdfsHost;
-import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
-import org.cloudbus.cloudsim.provisioners.PeProvisionerSimple;
-import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -43,7 +40,7 @@ public class HdfsExample0 {
 	private static List<Cloudlet> cloudletList;
 
 	/** The vmlist. */
-	private static List<Vm> vmlist;
+	private static List<Vm> vmList;
 
 	/**
 	 * Creates main() to run this example
@@ -61,68 +58,67 @@ public class HdfsExample0 {
 
 			// Initialize the CloudSim library
 			CloudSim.init(num_user, calendar, trace_flag);
-			
+
+			// Second step: create the datacenters
+
 			// set the required values to create a datacenter
-			int[] datacenterParameters = new int[8];
 
 			// values for PEs
-			datacenterParameters[0] = 1000;		// mips (performance) of a single PE
-			datacenterParameters[1] = 1;		// number of PEs per Host
+			int datacenterPeMips = 1000;		// mips (performance) of a single PE
+			int datacenterPeCount = 1;			// number of PEs per Host
 
 			// values for Hosts
-			datacenterParameters[2] = 2;		// number of Hosts (in totale nel Datacenter)
-			datacenterParameters[3] = 2048;		// amount of RAM for each Host
-			datacenterParameters[4] = 100000;	// amount of Storage assigned to each Host
-			datacenterParameters[5] = 10000;	// amount of Bandwidth assigned to each Host
+			int datacenterHostCount = 2;		// number of Hosts (in totale nel Datacenter)
+			int datacenterHostRam = 2048;		// amount of RAM for each Host
+			int datacenterHostStorage = 100000;	// amount of Storage assigned to each Host
+			int datacenterHostBw = 10000;		// amount of Bandwidth assigned to each Host
 
 			// values for Storage
-			datacenterParameters[6] = 2;		// number of Hard Drives in the Datacenter
-			datacenterParameters[7] = 100000;	// capacity of each Hard Drive
+			int datacenterDiskCount = 2;		// number of Hard Drives in the Datacenter
+			int datacenterDiskSize = 100000;	// capacity of each Hard Drive
+
+			// create an array with all parameters stored inside
+			int[] datacenterParameters = new int[]{datacenterPeMips, datacenterPeCount, datacenterHostCount, datacenterHostRam,
+					datacenterHostStorage, datacenterHostBw, datacenterDiskCount, datacenterDiskSize};
+
 
 			// Second step: Create Datacenters
-			@SuppressWarnings("unused")
+
 			// Client datacenter
 			HdfsDatacenter datacenter0 = createDatacenter("Datacenter_0", datacenterParameters);
 			// Data Nodes datacenter
 			HdfsDatacenter datacenter1 = createDatacenter("Datacenter_1", datacenterParameters);
 
-			//Third step: Create a Broker (ne serve solo uno perchè abbiamo un solo Client)
+
+			// Third step: Create a Broker (ne serve solo uno perchè abbiamo un solo Client)
+
 			HdfsDatacenterBroker broker = createBroker();
 			int brokerId = broker.getId();
 
-			//Fourth step: Create one virtual machine
-			vmlist = new ArrayList<Vm>();
 
-			//VM description
-			int vmId = 0;
-			int mips = 250;
-			long size = 10000; //image size (MB)
-			int ram = 2048; //vm memory (MB)
-			long bw = 1000;
-			int pesNumber = 1; //number of cpus
-			String vmm = "Xen"; //VMM name
+			// Fourth step: Create VMs
 
-			//create three VMs
-			Vm vm1 = new Vm(vmId, brokerId, mips, pesNumber, ram, bw, size, vmm, new CloudletSchedulerTimeShared());
+			int vmCount = 3;	// number of vms
 
-			vmId++;
-			Vm vm2 = new Vm(vmId, brokerId, mips, pesNumber, ram, bw, size, vmm, new CloudletSchedulerTimeShared());
+			// parameters of each VM
+			long vmSize = 10000;
+			int vmRam = 2048;
+			int vmMips = 250;
+			long vmBw = 1000;
+			int vmPesNumber = 1;
 
-			vmId++;
-			Vm vm3 = new Vm(vmId, brokerId, mips, pesNumber, ram, bw, size, vmm, new CloudletSchedulerTimeShared());
-
-			//add the VMs to the vmList
-			vmlist.add(vm1);	// Client
-			vmlist.add(vm2);	// Data Node 1
-			vmlist.add(vm3);	// Data Node 2
+			// this will create all identical vms, as many as specified in vmCount
+			vmList = createVmList(brokerId, vmCount, vmSize, vmRam, vmMips, vmBw, vmPesNumber);
 
 			//submit vm list to the broker
-			broker.submitVmList(vmlist);
+			broker.submitVmList(vmList);
+
 			// TODO: come posso fare perchè vm1 possa andare solo nel primo datacenter, e vm2 e vm3 per forza nel secondo?
 
 			// TODO: ricorda che i cloudlet devono essere HdfsCloudlets e bisogna assegnarci il requiredFile, che sarebbe il blocco hdfs
 
-			//Fifth step: Create two Cloudlets
+			//Fifth step: Create Cloudlets
+
 			cloudletList = new ArrayList<Cloudlet>();
 
 			//Cloudlet properties, nota che i cloudlets sono identici, a differenza delle VMs
@@ -130,6 +126,7 @@ public class HdfsExample0 {
 			long length = 40000;
 			long fileSize = 300;
 			long outputSize = 300;
+			int pesNumber = 1;
 			UtilizationModel utilizationModel = new UtilizationModelFull();
 
 			int blockSize = 10000;
@@ -161,8 +158,8 @@ public class HdfsExample0 {
 
 			// set the destination vm id for the cloudlets
 			// queste saranno le VM di destinazione in cui vanno scritti i blocchi HDFS
-			cloudlet1.setDestVmId(vm2.getId());
-			cloudlet2.setDestVmId(vm3.getId());
+			cloudlet1.setDestVmId(vmList.get(1).getId());	// vm #2
+			cloudlet2.setDestVmId(vmList.get(2).getId());	// vm #3
 
 			// add the cloudlets to the list
 			cloudletList.add(cloudlet1);
@@ -173,8 +170,8 @@ public class HdfsExample0 {
 
 			// bind the cloudlets to the vms, in questo caso entrambi vanno eseguiti sulla vm1
 			// che è la vm del Client che legge i files
-			broker.bindCloudletToVm(cloudlet1.getCloudletId(),vm1.getId());
-			broker.bindCloudletToVm(cloudlet2.getCloudletId(),vm1.getId());
+			broker.bindCloudletToVm(cloudlet1.getCloudletId(),vmList.get(0).getId());
+			broker.bindCloudletToVm(cloudlet2.getCloudletId(),vmList.get(0).getId());
 
 			// Sixth step: Starts the simulation
 			CloudSim.startSimulation();
