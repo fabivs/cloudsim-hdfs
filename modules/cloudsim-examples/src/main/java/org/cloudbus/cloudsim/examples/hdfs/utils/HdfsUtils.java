@@ -15,11 +15,10 @@ public final class HdfsUtils {
 
     // crea una lista di Vms da submittare al broker
     // NOTE: vmm is always "Xen"
-    public static List<Vm> createVmList(int userId, int count, long size, int ram, int mips, long bw, int pesNumber){
+    public static List<Vm> createVmList(int count, int userId, int mips, int pesNumber, int ram, long bw, long size,
+                                        String vmm, CloudletScheduler cloudletScheduler){
 
         LinkedList<Vm> list = new LinkedList<Vm>();
-
-        String vmm = "Xen"; // VMM name
 
         // array di VMs
         Vm[] vm = new Vm[count];
@@ -27,7 +26,8 @@ public final class HdfsUtils {
         // funziona così: vm è un array di dimensione "vms", nel ciclo riempiamo questo array di tante nuove vm,
         // ognuna di queste vm è anche aggiunta alla lista "list", che è ritornata alla fine, fuori dal ciclo
         for(int i = 0; i < count; i++){
-            vm[i] = new Vm(i, userId, mips, pesNumber, ram, bw, size, vmm, new CloudletSchedulerTimeShared());
+
+            vm[i] = new Vm(i, userId, mips, pesNumber, ram, bw, size, vmm, cloudletScheduler);
 
             //to create a VM with a space shared scheduling policy for cloudlets:
             //vm[i] = Vm(i, userId, mips, pesNumber, ram, bw, size, priority, vmm, new CloudletSchedulerSpaceShared());

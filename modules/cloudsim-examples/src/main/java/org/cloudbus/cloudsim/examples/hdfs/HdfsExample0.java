@@ -61,7 +61,7 @@ public class HdfsExample0 {
 
 			// Second step: create the datacenters
 
-			// set the required values to create a datacenter
+			// DATACENTER PARAMETERS
 
 			// values for PEs
 			int datacenterPeMips = 1000;		// mips (performance) of a single PE
@@ -81,9 +81,6 @@ public class HdfsExample0 {
 			int[] datacenterParameters = new int[]{datacenterPeMips, datacenterPeCount, datacenterHostCount, datacenterHostRam,
 					datacenterHostStorage, datacenterHostBw, datacenterDiskCount, datacenterDiskSize};
 
-
-			// Second step: Create Datacenters
-
 			// Client datacenter
 			HdfsDatacenter datacenter0 = createDatacenter("Datacenter_0", datacenterParameters);
 			// Data Nodes datacenter
@@ -98,30 +95,30 @@ public class HdfsExample0 {
 
 			// Fourth step: Create VMs
 
-			int vmCount = 3;	// number of vms
-
-			// parameters of each VM
-			long vmSize = 10000;
-			int vmRam = 2048;
+			// VM PARAMETERS
+			int vmCount = 3;	// number of vms to be created
 			int vmMips = 250;
-			long vmBw = 1000;
 			int vmPesNumber = 1;
+			int vmRam = 2048;
+			long vmBw = 1000;
+			long vmSize = 10000;
+			String vmm = "Xen";
+			CloudletScheduler cloudletScheduler = new CloudletSchedulerTimeShared(); // alternativamente può essere Space Shared
 
-			// this will create all identical vms, as many as specified in vmCount
-			vmList = createVmList(brokerId, vmCount, vmSize, vmRam, vmMips, vmBw, vmPesNumber);
+			// NOTE: this will create all identical vms, to create VMs with different parameters, run this method multiple times
+			vmList = createVmList(vmCount, brokerId, vmMips, vmPesNumber, vmRam, vmBw, vmSize, vmm, cloudletScheduler);
 
 			//submit vm list to the broker
 			broker.submitVmList(vmList);
 
 			// TODO: come posso fare perchè vm1 possa andare solo nel primo datacenter, e vm2 e vm3 per forza nel secondo?
 
-			// TODO: ricorda che i cloudlet devono essere HdfsCloudlets e bisogna assegnarci il requiredFile, che sarebbe il blocco hdfs
 
-			//Fifth step: Create Cloudlets
+			// Fifth step: Create Cloudlets
 
 			cloudletList = new ArrayList<Cloudlet>();
 
-			//Cloudlet properties, nota che i cloudlets sono identici, a differenza delle VMs
+			// CLOUDLET PARAMETERS
 			int id = 0;
 			long length = 40000;
 			long fileSize = 300;
