@@ -74,6 +74,23 @@ public final class HdfsUtils {
         return peList;
     }
 
+    public static List<File> createBlockList(int count, int blockSize) throws ParameterException {
+
+        List<File> blockList = new ArrayList<File>();
+
+        String blockName;
+        File block;
+
+        for (int i = 0; i < count; i++){
+
+            blockName = "Block_" + String.valueOf(i);
+            block = new File(blockName, blockSize);
+            blockList.add(block);
+        }
+
+        return blockList;
+    }
+
     // questa linked list sarà poi la linked list di storage in DatacenterCharacteristics
     public static LinkedList<Storage> createStorageList(int num, int storageSize) throws ParameterException {
 

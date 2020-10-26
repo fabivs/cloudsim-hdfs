@@ -24,16 +24,6 @@ import java.util.List;
 
 import static org.cloudbus.cloudsim.examples.hdfs.utils.HdfsUtils.*;
 
-
-/**
- * A simple example showing how to create
- * a datacenter with two hosts and run two
- * cloudlets on it. The cloudlets run in
- * VMs with different MIPS requirements.
- * The cloudlets will take different time
- * to complete the execution depending on
- * the requested VM performance.
- */
 public class HdfsExample0 {
 
 	/** The cloudlet list. */
@@ -126,22 +116,23 @@ public class HdfsExample0 {
 			int pesNumber = 1;
 			UtilizationModel utilizationModel = new UtilizationModelFull();
 
+			// I'll make two blocks to transfer from vm1 to vm2 and from vm1 to vm3
+
+			// HDFS BLOCKS PARAMETERS
+			int blockCount = 2;
 			int blockSize = 10000;
 
-			// I'll make two blocks to transfer from vm1 to vm2 and from vm1 to vm3
-			File block1 = new File("block1", blockSize);
-			File block2 = new File("block2", blockSize);
+			List<File> blockList = createBlockList(blockCount, blockSize);
 
 			// We have to store the files inside the drives of Datacenter 0 first, because the client will read them from there
-			datacenter0.addFile(block1);
-			datacenter0.addFile(block2);
+			datacenter0.addFiles(blockList);	// adds the files in the list as a series of separate files
 
 			// We have to make a list of strings for the "requiredFiles" field inside the HdfsCloudlet constructor
 			List<String> blockList1 = new ArrayList<String>();
-			blockList1.add(block1.getName());
+			blockList1.add(blockList.get(0).getName());
 
 			List<String> blockList2 = new ArrayList<String>();
-			blockList2.add(block2.getName());
+			blockList2.add(blockList.get(1).getName());
 
 			// Finally we can create the cloudlets
 			HdfsCloudlet cloudlet1 = new HdfsCloudlet(id, length, pesNumber, fileSize, outputSize, utilizationModel,
@@ -180,7 +171,7 @@ public class HdfsExample0 {
 
         	printCloudletList(newList);
 
-			Log.printLine("CloudSimExample3 finished!");
+			Log.printLine("HdfsExample0 finished!");
 		}
 		catch (Exception e) {
 			e.printStackTrace();

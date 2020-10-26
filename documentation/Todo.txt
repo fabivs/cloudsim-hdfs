@@ -21,10 +21,8 @@ File transfer:
     per quanto riguarda il cloudlet che legge e poi l'invio al Data Node del cloudlet che scrive
 
 - migliorare la scalabilità del codice:
-    - creare un metodo che genera automaticamente i data blocks
     - creare un metodo che setta chi sono i clients e chi sono i data nodes (in modo che poi vengano assegnati da soli
     a datacenters diversi
-    - creare un metodo che genera automaticamente la lista dei cloudlets (in cui vanno settati anche i "destVmId")
 
 IDEAS:
 - aggiungere un sistema di tags per le VMs in modo che possiamo settare chi è un client e chi è un data node, e poi il

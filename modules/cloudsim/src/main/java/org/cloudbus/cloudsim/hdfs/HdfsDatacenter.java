@@ -39,6 +39,16 @@ public class HdfsDatacenter extends Datacenter {
         fileNameCounter = 0;
     }
 
+    // adds the files in the list as a series of separate files
+    // TODO: non ci sono gli stessi checks che ci sono nella singola addFile, sono difficili da reimplementare, non so...
+    public void addFiles(List<File> fileList){
+
+        for (File file : fileList) {
+            super.addFile(file);
+        }
+
+    }
+
     @Override
     public void processEvent(SimEvent ev) {
         int srcId = -1;
