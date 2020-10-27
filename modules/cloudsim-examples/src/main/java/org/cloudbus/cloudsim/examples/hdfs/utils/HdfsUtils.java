@@ -2,12 +2,14 @@ package org.cloudbus.cloudsim.examples.hdfs.utils;
 
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.hdfs.HdfsCloudlet;
+import org.cloudbus.cloudsim.hdfs.HdfsDatacenter;
 import org.cloudbus.cloudsim.hdfs.HdfsHost;
 import org.cloudbus.cloudsim.hdfs.HdfsVm;
 import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.PeProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -63,7 +65,7 @@ public final class HdfsUtils {
     }
 
     // crea la lista di PEs per ciascun singolo Host
-    // TODO: for now it only uses PeProvisionerSimple
+    // TODO: for now it only uses PeProvisionerSimple (ma è l'unico che esiste in Cloudsim in ogni caso)
     public static List<Pe> createPeList(int num, int mips){
 
         List<Pe> peList = new ArrayList<Pe>();
@@ -127,5 +129,61 @@ public final class HdfsUtils {
         }
 
         return hostList;
+    }
+
+    // PRINTING UTILITIES
+
+    /**
+     * Prints the Cloudlet objects
+     * @param list  list of Cloudlets
+     */
+    public static void printCloudletList(List<Cloudlet> list) {
+        int size = list.size();
+        Cloudlet cloudlet;
+
+        String indent = "    ";
+        Log.printLine();
+        Log.printLine("========== OUTPUT ==========");
+        Log.printLine("Cloudlet ID" + indent + "STATUS" + indent +
+                "Data center ID" + indent + "VM ID" + indent + "Time" + indent + "Start Time" + indent + "Finish Time");
+
+        DecimalFormat dft = new DecimalFormat("###.##");
+        for (int i = 0; i < size; i++) {
+            cloudlet = list.get(i);
+            Log.print(indent + cloudlet.getCloudletId() + indent + indent);
+
+            if (cloudlet.getCloudletStatus() == Cloudlet.SUCCESS){
+                Log.print("SUCCESS");
+
+                Log.printLine( indent + indent + cloudlet.getResourceId() + indent + indent + indent + cloudlet.getVmId() +
+                        indent + indent + dft.format(cloudlet.getActualCPUTime()) + indent + indent + dft.format(cloudlet.getExecStartTime())+
+                        indent + indent + dft.format(cloudlet.getFinishTime()));
+            }
+        }
+    }
+
+    /**
+     * Prints the Storage objects
+     * @param list  Storage list from a single Datacenter
+     */
+    public static void printStorageList(List<HdfsDatacenter> list){
+
+        String indent = "    ";
+        Log.printLine();
+        Log.printLine("========== STORAGE STATUS ==========");
+
+        for (HdfsDatacenter datacenter : list){
+            Log.printLine("Datacenter ID: " + datacenter.getId());
+
+            for (Storage drive : datacenter.getStorageList()){
+                Log.printLine(indent + "Drive:  " + drive.getName() + ", Maximum capacity: " + drive.getCapacity() +
+                        " MB, Used space: " + drive.getCurrentSize() + " MB, Free Space: " + drive.getAvailableSpace() + " MB");
+                Log.printLine(indent + indent + "File list: (Number of stored files: " + drive.getNumStoredFile() + ")");
+
+                for (String fileName : drive.getFileNameList()){
+                    Log.printLine(indent + indent + indent + "File: " + fileName);
+                }
+            }
+        }
     }
 }

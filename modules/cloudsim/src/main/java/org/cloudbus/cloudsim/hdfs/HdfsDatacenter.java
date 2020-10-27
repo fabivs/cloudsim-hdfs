@@ -15,6 +15,9 @@ public class HdfsDatacenter extends Datacenter {
     // either a HDFS_CLIENT or HDFS_DN, which is going to be the role of the vms inside this Datacenter
     protected int hdfsType;
 
+    // creating a new variable with the same name as the super, to make it accessible through a getter
+    private List<Storage> storageList;
+
     /**
      * Allocates a new Datacenter object.
      *
@@ -52,6 +55,8 @@ public class HdfsDatacenter extends Datacenter {
 
     }
 
+    // GETTERS AND SETTERS
+
     public int getHdfsType() {
         return hdfsType;
     }
@@ -59,6 +64,18 @@ public class HdfsDatacenter extends Datacenter {
     public void setHdfsType(int hdfsType) {
         this.hdfsType = hdfsType;
     }
+
+    @Override
+    public List<Storage> getStorageList() {
+        return storageList;
+    }
+
+    @Override
+    public void setStorageList(List<Storage> storageList) {
+        this.storageList = storageList;
+    }
+
+    // NEW METHODS
 
     @Override
     public void processEvent(SimEvent ev) {

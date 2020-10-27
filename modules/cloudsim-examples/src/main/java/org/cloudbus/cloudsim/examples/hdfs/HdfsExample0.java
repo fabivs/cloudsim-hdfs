@@ -70,6 +70,9 @@ public class HdfsExample0 {
 			int[] datacenterParameters = new int[]{datacenterPeMips, datacenterPeCount, datacenterHostCount, datacenterHostRam,
 					datacenterHostStorage, datacenterHostBw, datacenterDiskCount, datacenterDiskSize};
 
+			// metto i Datacenters in una list per convenience, in particolare per il metodo printStorageList
+			List<HdfsDatacenter> datacenterList =  new ArrayList<HdfsDatacenter>();
+
 			// Client datacenter
 			HdfsDatacenter datacenter0 = createDatacenter("Datacenter_0", datacenterParameters);
 			datacenter0.setHdfsType(HDFS_CLIENT);
@@ -77,6 +80,8 @@ public class HdfsExample0 {
 			HdfsDatacenter datacenter1 = createDatacenter("Datacenter_1", datacenterParameters);
 			datacenter1.setHdfsType(HDFS_DN);
 
+			datacenterList.add(datacenter0);
+			datacenterList.add(datacenter1);
 
 			// Third step: Create a Broker (ne serve solo uno perchè abbiamo un solo Client)
 
@@ -106,8 +111,6 @@ public class HdfsExample0 {
 
 			//submit vm list to the broker
 			broker.submitVmList(vmList);
-
-			// TODO: come posso fare perchè vm1 possa andare solo nel primo datacenter, e vm2 e vm3 per forza nel secondo?
 
 
 			// Fifth step: Create Cloudlets
@@ -176,6 +179,9 @@ public class HdfsExample0 {
 			CloudSim.stopSimulation();
 
         	printCloudletList(newList);
+
+        	// printing the status of the Drives in the Datacenters
+        	printStorageList(datacenterList);
 
 			Log.printLine("HdfsExample0 finished!");
 		}
@@ -246,94 +252,6 @@ public class HdfsExample0 {
 
 	}
 
-	/*
-	private static HdfsDatacenter createDatacenter(String name) throws ParameterException {
-
-		// 1. Create a list of Hosts inside the Datacenter
-		List<HdfsHost> hostList = new ArrayList<HdfsHost>();
-
-		// 2. Each machine has a list of PEs (cores)
-		List<Pe> peList = new ArrayList<Pe>();
-
-		int mips = 1000;
-
-		// 3. Create PEs and add them to a list
-		// in questo caso abbiamo un singolo core per machine
-		peList.add(new Pe(0, new PeProvisionerSimple(mips))); // need to store the Pe id and MIPS Rating
-
-		//4. Create Hosts, each with its own ID and PE list, and add them to the list of machines
-		int hostId=0;
-		int ram = 2048; //host memory (MB)
-		long storageSize = 100000; //host storage
-		int bw = 10000;
-
-		hostList.add(
-    			new HdfsHost(
-    				hostId,
-    				new RamProvisionerSimple(ram),
-    				new BwProvisionerSimple(bw),
-    				storageSize,
-    				peList,
-    				new VmSchedulerTimeShared(peList)
-    			)
-    		); // This is our first machine
-
-		//create another machine
-
-		// ovviamente bisogna creare una nuova peList e aggiungerci un nuovo PE,
-		// nota che non fa niente che l'id è sempre 0, probabilmente perchè è relativo al singolo host
-		List<Pe> peList2 = new ArrayList<Pe>();
-		peList2.add(new Pe(0, new PeProvisionerSimple(mips)));
-
-
-		hostId++;	// il nuovo host ovviamente non può avere lo stesso id
-
-		hostList.add(
-    			new HdfsHost(
-    				hostId,
-    				new RamProvisionerSimple(ram),
-    				new BwProvisionerSimple(bw),
-    				storageSize,
-    				peList2,
-    				new VmSchedulerTimeShared(peList2)
-    			)
-    		); // This is our second machine
-
-
-		// 5. Create a DatacenterCharacteristics object
-		String arch = "x86";      // system architecture
-		String os = "Linux";          // operating system
-		String vmm = "Xen";
-		double time_zone = 10.0;         // time zone this resource located
-		double cost = 3.0;              // the cost of using processing in this resource
-		double costPerMem = 0.05;		// the cost of using memory in this resource
-		double costPerStorage = 0.001;	// the cost of using storage in this resource
-		double costPerBw = 0.0;			// the cost of using bw in this resource
-		LinkedList<Storage> storageList = new LinkedList<Storage>();	//we are not adding SAN devices by now
-
-		// creo gli hard drives
-		HarddriveStorage hardDrive = new HarddriveStorage("HDD_0", storageSize);
-		HarddriveStorage hardDrive2 = new HarddriveStorage("HDD_1", storageSize);
-
-		// penso che questo sia ovviamente necessario, lol
-		storageList.add(hardDrive);
-		storageList.add(hardDrive2);
-
-        DatacenterCharacteristics characteristics = new DatacenterCharacteristics(
-                arch, os, vmm, hostList, time_zone, cost, costPerMem, costPerStorage, costPerBw);
-
-		// 6. Finally, we need to create a PowerDatacenter object.
-		HdfsDatacenter datacenter = null;
-		try {
-			datacenter = new HdfsDatacenter(name, characteristics, new VmAllocationPolicySimple(hostList), storageList, 0);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-		return datacenter;
-	}
-	 */
-
 	//We strongly encourage users to develop their own broker policies, to submit vms and cloudlets according
 	//to the specific rules of the simulated scenario
 	private static HdfsDatacenterBroker createBroker(){
@@ -348,33 +266,4 @@ public class HdfsExample0 {
 		return broker;
 	}
 
-	/**
-	 * Prints the Cloudlet objects
-	 * @param list  list of Cloudlets
-	 */
-	private static void printCloudletList(List<Cloudlet> list) {
-		int size = list.size();
-		Cloudlet cloudlet;
-
-		String indent = "    ";
-		Log.printLine();
-		Log.printLine("========== OUTPUT ==========");
-		Log.printLine("Cloudlet ID" + indent + "STATUS" + indent +
-				"Data center ID" + indent + "VM ID" + indent + "Time" + indent + "Start Time" + indent + "Finish Time");
-
-		DecimalFormat dft = new DecimalFormat("###.##");
-		for (int i = 0; i < size; i++) {
-			cloudlet = list.get(i);
-			Log.print(indent + cloudlet.getCloudletId() + indent + indent);
-
-			if (cloudlet.getCloudletStatus() == Cloudlet.SUCCESS){
-				Log.print("SUCCESS");
-
-				Log.printLine( indent + indent + cloudlet.getResourceId() + indent + indent + indent + cloudlet.getVmId() +
-						indent + indent + dft.format(cloudlet.getActualCPUTime()) + indent + indent + dft.format(cloudlet.getExecStartTime())+
-						indent + indent + dft.format(cloudlet.getFinishTime()));
-			}
-		}
-
-	}
 }

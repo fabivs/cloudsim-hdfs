@@ -7,15 +7,7 @@ File transfer:
 
 - aggiungere la network topology a HdfsExample0
 
-- aggiungere dei logs a fine esecuzione dell'esempio che mostrano il current left storage nei vari drives dei DNs,
-  così vediamo effettivamente che i files sono stati salvati
-
-- controllare che i tempi dei cloudlets abbiano senso
-    => perchè i due cloudlets del client terminano molto dopo quelli
-    dei Data Nodes? li aspettano? pensavo di aver rimosso che li aspettassero, dovrebbero essere indipendenti!
-    I cloudlets del client spawnano quelli sui DN ma poi terminano per fatti loro subito.
-    => se necessario ricontrollare come avviene la catena dei vari send tra HdfsDatacenter e HdfsDatacenterBroker per
-    per quanto riguarda il cloudlet che legge e poi l'invio al Data Node del cloudlet che scrive
+- è possibile fare in modo che i cloudlets del Client non aspettino quelli dei Data Nodes? Dovrei usare threads?
 
 - fare in modo che i cloudlets possono essere allocati solo alle Vms con lo stesso HdfsType (client o data node),
   al momento il problema è aggirato dal fatto che faccio manualmente una cloudlet bind, ma idealmente non dovrei aver
