@@ -11,10 +11,7 @@ package org.cloudbus.cloudsim.examples.hdfs;
 
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
-import org.cloudbus.cloudsim.hdfs.HdfsCloudlet;
-import org.cloudbus.cloudsim.hdfs.HdfsDatacenter;
-import org.cloudbus.cloudsim.hdfs.HdfsDatacenterBroker;
-import org.cloudbus.cloudsim.hdfs.HdfsHost;
+import org.cloudbus.cloudsim.hdfs.*;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -22,6 +19,8 @@ import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
 
+import static org.cloudbus.cloudsim.core.CloudSimTags.HDFS_CLIENT;
+import static org.cloudbus.cloudsim.core.CloudSimTags.HDFS_DN;
 import static org.cloudbus.cloudsim.examples.hdfs.utils.HdfsUtils.*;
 
 public class HdfsExample0 {
@@ -30,7 +29,7 @@ public class HdfsExample0 {
 	private static List<Cloudlet> cloudletList;
 
 	/** The vmlist. */
-	private static List<Vm> vmList;
+	private static List<HdfsVm> vmList;
 
 	/**
 	 * Creates main() to run this example
@@ -73,8 +72,10 @@ public class HdfsExample0 {
 
 			// Client datacenter
 			HdfsDatacenter datacenter0 = createDatacenter("Datacenter_0", datacenterParameters);
+			datacenter0.setHdfsType(HDFS_CLIENT);
 			// Data Nodes datacenter
 			HdfsDatacenter datacenter1 = createDatacenter("Datacenter_1", datacenterParameters);
+			datacenter1.setHdfsType(HDFS_DN);
 
 
 			// Third step: Create a Broker (ne serve solo uno perchè abbiamo un solo Client)
@@ -97,6 +98,11 @@ public class HdfsExample0 {
 
 			// NOTE: this will create all identical vms, to create VMs with different parameters, run this method multiple times
 			vmList = createVmList(vmCount, brokerId, vmMips, vmPesNumber, vmRam, vmBw, vmSize, vmm, cloudletSchedulerType);
+
+			// TODO: integrare questa parte nel metodo createVmList
+			vmList.get(0).setHdfsType(HDFS_CLIENT);
+			vmList.get(1).setHdfsType(HDFS_DN);
+			vmList.get(2).setHdfsType(HDFS_DN);
 
 			//submit vm list to the broker
 			broker.submitVmList(vmList);

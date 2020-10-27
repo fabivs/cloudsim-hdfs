@@ -294,6 +294,10 @@ public class CloudSimTags {
 	// Denotes the return of the Cloudlet from the DN to the Broker, questo è il Cloudlet che scrive il block
 	public static final int HDFS_DN_CLOUDLET_RETURN = BASE + 54;
 
+	// I tags per definire se un Datacenter o una VM o un Cloudlet sono dedicati ai Client o ai Data Nodes
+	public static final int HDFS_CLIENT = BASE + 55;
+	public static final int HDFS_DN = BASE + 56;
+
 	/** Private Constructor. */
 	private CloudSimTags() {
 		throw new UnsupportedOperationException("CloudSimTags cannot be instantiated");

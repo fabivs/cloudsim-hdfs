@@ -3,6 +3,7 @@ package org.cloudbus.cloudsim.examples.hdfs.utils;
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.hdfs.HdfsCloudlet;
 import org.cloudbus.cloudsim.hdfs.HdfsHost;
+import org.cloudbus.cloudsim.hdfs.HdfsVm;
 import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.PeProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
@@ -15,13 +16,13 @@ public final class HdfsUtils {
 
     // crea una lista di Vms da submittare al broker
     // NOTE: vmm is always "Xen"
-    public static List<Vm> createVmList(int count, int userId, int mips, int pesNumber, int ram, long bw, long size,
-                                        String vmm, String cloudletSchedulerType){
+    public static List<HdfsVm> createVmList(int count, int userId, int mips, int pesNumber, int ram, long bw, long size,
+                                            String vmm, String cloudletSchedulerType){
 
-        LinkedList<Vm> list = new LinkedList<Vm>();
+        LinkedList<HdfsVm> list = new LinkedList<HdfsVm>();
 
         // array di VMs
-        Vm[] vm = new Vm[count];
+        HdfsVm[] vm = new HdfsVm[count];
 
         // funziona così: vm è un array di dimensione "vms", nel ciclo riempiamo questo array di tante nuove vm,
         // ognuna di queste vm è anche aggiunta alla lista "list", che è ritornata alla fine, fuori dal ciclo
@@ -30,7 +31,7 @@ public final class HdfsUtils {
             CloudletScheduler cloudletScheduler =
                     (cloudletSchedulerType.equals("Time")) ? new CloudletSchedulerTimeShared() : new CloudletSchedulerSpaceShared();
 
-            vm[i] = new Vm(i, userId, mips, pesNumber, ram, bw, size, vmm, cloudletScheduler);
+            vm[i] = new HdfsVm(i, userId, mips, pesNumber, ram, bw, size, vmm, cloudletScheduler);
 
             //to create a VM with a space shared scheduling policy for cloudlets:
             //vm[i] = Vm(i, userId, mips, pesNumber, ram, bw, size, priority, vmm, new CloudletSchedulerSpaceShared());

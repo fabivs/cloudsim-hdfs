@@ -326,6 +326,7 @@ public class DatacenterBroker extends SimEntity {
 		int requestedVms = 0;
 		String datacenterName = CloudSim.getEntityName(datacenterId);
 		for (Vm vm : getVmList()) {
+			// se la vm non è stata già allocata a nessun datacenter
 			if (!getVmsToDatacentersMap().containsKey(vm.getId())) {
 				Log.printLine(CloudSim.clock() + ": " + getName() + ": Trying to Create VM #" + vm.getId()
 						+ " in " + datacenterName);

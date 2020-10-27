@@ -1,12 +1,16 @@
 package org.cloudbus.cloudsim.hdfs;
 
 import org.cloudbus.cloudsim.Cloudlet;
-import org.cloudbus.cloudsim.File;
 import org.cloudbus.cloudsim.UtilizationModel;
 
 import java.util.List;
 
+import static org.cloudbus.cloudsim.core.CloudSimTags.HDFS_DN;
+
 public class HdfsCloudlet extends Cloudlet {
+
+    // the HDFS type: either Client or Data Node, by default it's going to be Data Node
+    protected int hdfsType;
 
     // the id of the original vm, so we don't lose it
     protected int sourceVmId;
@@ -30,6 +34,8 @@ public class HdfsCloudlet extends Cloudlet {
                         List<String> fileList, int blockSize) {
         super(cloudletId, cloudletLength, pesNumber, cloudletFileSize, cloudletOutputSize, utilizationModelCpu, utilizationModelRam, utilizationModelBw, fileList);
         this.blockSize = blockSize;
+        // by default the type will be Data Node, this is because I made this change after writing all the file transfer code
+        this.hdfsType = HDFS_DN;
     }
 
     // this method clones the given cloudlet into a new one, with the new given ID
@@ -59,6 +65,14 @@ public class HdfsCloudlet extends Cloudlet {
     }
 
     // Getters and Setters
+
+    public int getHdfsType() {
+        return hdfsType;
+    }
+
+    public void setHdfsType(int hdfsType) {
+        this.hdfsType = hdfsType;
+    }
 
     public int getSourceVmId() {
         return sourceVmId;

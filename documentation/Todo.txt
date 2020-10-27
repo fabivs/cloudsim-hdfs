@@ -22,7 +22,10 @@ File transfer:
 
 - migliorare la scalabilità del codice:
     - creare un metodo che setta chi sono i clients e chi sono i data nodes (in modo che poi vengano assegnati da soli
-    a datacenters diversi
+    a datacenters diversi => MODIFICANDO: VmAllocationPolicySimple, che alloca le VMs ai Datacenters
+
+- fare in modo che i successivi a quelli iniziali possano essere allocati solo ai Data Nodes => le VMs dei Client non
+  devono consentire che gli vengano allocati cloudlets, a meno che non sono quelli espressamente bindati
 
 IDEAS:
 - aggiungere un sistema di tags per le VMs in modo che possiamo settare chi è un client e chi è un data node, e poi il

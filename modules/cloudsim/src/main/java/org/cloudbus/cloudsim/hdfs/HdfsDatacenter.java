@@ -12,6 +12,9 @@ public class HdfsDatacenter extends Datacenter {
 
     private int fileNameCounter;
 
+    // either a HDFS_CLIENT or HDFS_DN, which is going to be the role of the vms inside this Datacenter
+    protected int hdfsType;
+
     /**
      * Allocates a new Datacenter object.
      *
@@ -47,6 +50,14 @@ public class HdfsDatacenter extends Datacenter {
             super.addFile(file);
         }
 
+    }
+
+    public int getHdfsType() {
+        return hdfsType;
+    }
+
+    public void setHdfsType(int hdfsType) {
+        this.hdfsType = hdfsType;
     }
 
     @Override
@@ -491,6 +502,44 @@ public class HdfsDatacenter extends Datacenter {
         }
 
         return time;
+    }
+
+    @Override
+    protected void processVmCreate(SimEvent ev, boolean ack) {
+        HdfsVm vm = (HdfsVm) ev.getData();
+
+        boolean result;
+        if (this.getHdfsType() == vm.getHdfsType()){
+            result = getVmAllocationPolicy().allocateHostForVm(vm);
+        } else {
+            result = false;
+        }
+
+
+        if (ack) {
+            int[] data = new int[3];
+            data[0] = getId();
+            data[1] = vm.getId();
+
+            if (result) {
+                data[2] = CloudSimTags.TRUE;
+            } else {
+                data[2] = CloudSimTags.FALSE;
+            }
+            send(vm.getUserId(), CloudSim.getMinTimeBetweenEvents(), CloudSimTags.VM_CREATE_ACK, data);
+        }
+
+        if (result) {
+            getVmList().add(vm);
+
+            if (vm.isBeingInstantiated()) {
+                vm.setBeingInstantiated(false);
+            }
+
+            vm.updateVmProcessing(CloudSim.clock(), getVmAllocationPolicy().getHost(vm).getVmScheduler()
+                    .getAllocatedMipsForVm(vm));
+        }
+
     }
 
 }
