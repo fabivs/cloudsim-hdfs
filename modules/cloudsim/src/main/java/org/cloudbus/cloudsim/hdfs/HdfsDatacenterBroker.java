@@ -127,7 +127,7 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
                 vm = VmList.getById(getVmsCreatedList(), cloudlet.getVmId());
                 if (vm == null) { // vm was not created
                     if(!Log.isDisabled()) {
-                        Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Postponing execution of Data Cloudlet ",
+                        Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Postponing execution of Cloudlet ",
                                 cloudlet.getCloudletId(), ": bound VM not available");
                     }
                     continue;
@@ -135,7 +135,7 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
             }
 
             if (!Log.isDisabled()) {
-                Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Sending Data Cloudlet ",
+                Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Sending Cloudlet ",
                         cloudlet.getCloudletId(), " to VM #", vm.getId());
             }
 

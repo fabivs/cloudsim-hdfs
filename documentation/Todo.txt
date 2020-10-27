@@ -10,9 +10,6 @@ File transfer:
 - aggiungere dei logs a fine esecuzione dell'esempio che mostrano il current left storage nei vari drives dei DNs,
   così vediamo effettivamente che i files sono stati salvati
 
-- nell'example, fare in modo che una vm viene per forza assegnata nel primo datacenter e le altre vm nel secondo
-  datacenter, in modo che posso avere un datacenter per il client e uno per le vms
-
 - controllare che i tempi dei cloudlets abbiano senso
     => perchè i due cloudlets del client terminano molto dopo quelli
     dei Data Nodes? li aspettano? pensavo di aver rimosso che li aspettassero, dovrebbero essere indipendenti!
@@ -20,12 +17,10 @@ File transfer:
     => se necessario ricontrollare come avviene la catena dei vari send tra HdfsDatacenter e HdfsDatacenterBroker per
     per quanto riguarda il cloudlet che legge e poi l'invio al Data Node del cloudlet che scrive
 
-- migliorare la scalabilità del codice:
-    - creare un metodo che setta chi sono i clients e chi sono i data nodes (in modo che poi vengano assegnati da soli
-    a datacenters diversi => MODIFICANDO: VmAllocationPolicySimple, che alloca le VMs ai Datacenters
-
-- fare in modo che i successivi a quelli iniziali possano essere allocati solo ai Data Nodes => le VMs dei Client non
-  devono consentire che gli vengano allocati cloudlets, a meno che non sono quelli espressamente bindati
+- fare in modo che i cloudlets possono essere allocati solo alle Vms con lo stesso HdfsType (client o data node),
+  al momento il problema è aggirato dal fatto che faccio manualmente una cloudlet bind, ma idealmente non dovrei aver
+  bisogno di farla, e il programma fa tutto in automatico => questo forse non è fattibile... magari dovrò in futuro
+  creare l'HDFS master node che fa direttamente lui i binds.
 
 IDEAS:
 - aggiungere un sistema di tags per le VMs in modo che possiamo settare chi è un client e chi è un data node, e poi il
