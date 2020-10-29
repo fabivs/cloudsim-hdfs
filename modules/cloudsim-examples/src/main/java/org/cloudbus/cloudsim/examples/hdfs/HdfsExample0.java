@@ -170,7 +170,27 @@ public class HdfsExample0 {
 			broker.bindCloudletToVm(cloudlet1.getCloudletId(),vmList.get(0).getId());
 			broker.bindCloudletToVm(cloudlet2.getCloudletId(),vmList.get(0).getId());
 
-			// Sixth step: Starts the simulation
+
+			// NETWORK TOPOLOGY
+
+			//Sixth step: configure network
+			//load the network topology file
+			NetworkTopology.buildNetworkTopology("topology.brite");
+
+			//maps CloudSim entities to BRITE entities
+
+			int briteNode=0;
+			NetworkTopology.mapNode(datacenter0.getId(),briteNode);
+
+			// TODO: datacenter0 e broker devono trovarsi nello stesso nodo, ma assegnarli allo stesso nodo dà errore, quindi bisogna modificare la topology
+			briteNode=1;
+			NetworkTopology.mapNode(broker.getId(),briteNode);
+
+			briteNode=3;
+			NetworkTopology.mapNode(datacenter1.getId(),briteNode);
+
+
+			// Eighth step: Starts the simulation
 			CloudSim.startSimulation();
 
 			// Final step: Print results when simulation is over
