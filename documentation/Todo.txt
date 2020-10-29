@@ -7,8 +7,6 @@ File transfer:
 
 - aggiungere la network topology a HdfsExample0
 
-- è possibile fare in modo che i cloudlets del Client non aspettino quelli dei Data Nodes? Dovrei usare threads?
-
 - fare in modo che i cloudlets possono essere allocati solo alle Vms con lo stesso HdfsType (client o data node),
   al momento il problema è aggirato dal fatto che faccio manualmente una cloudlet bind, ma idealmente non dovrei aver
   bisogno di farla, e il programma fa tutto in automatico => questo forse non è fattibile... magari dovrò in futuro

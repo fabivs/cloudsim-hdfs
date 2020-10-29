@@ -31,6 +31,9 @@ public class HdfsExample0 {
 	/** The vmlist. */
 	private static List<HdfsVm> vmList;
 
+	/** The datacenter list */
+	private static List<HdfsDatacenter> datacenterList;
+
 	/**
 	 * Creates main() to run this example
 	 */
@@ -39,13 +42,12 @@ public class HdfsExample0 {
 		Log.printLine("Starting HdfsExample0...");
 
 		try {
-			// First step: Initialize the CloudSim package. It should be called
-			// before creating any entities.
+
+			// First step: Initialize CloudSim
 			int num_user = 1;   // number of cloud users
 			Calendar calendar = Calendar.getInstance();
 			boolean trace_flag = false;  // means trace events
 
-			// Initialize the CloudSim library
 			CloudSim.init(num_user, calendar, trace_flag);
 
 			// Second step: create the datacenters
@@ -71,17 +73,13 @@ public class HdfsExample0 {
 					datacenterHostStorage, datacenterHostBw, datacenterDiskCount, datacenterDiskSize};
 
 			// metto i Datacenters in una list per convenience, in particolare per il metodo printStorageList
-			List<HdfsDatacenter> datacenterList =  new ArrayList<HdfsDatacenter>();
+			datacenterList =  new ArrayList<HdfsDatacenter>();
 
 			// Client datacenter
-			HdfsDatacenter datacenter0 = createDatacenter("Datacenter_0", datacenterParameters);
-			datacenter0.setHdfsType(HDFS_CLIENT);
+			HdfsDatacenter datacenter0 = createDatacenter("Datacenter_0", HDFS_CLIENT, datacenterParameters);
 			// Data Nodes datacenter
-			HdfsDatacenter datacenter1 = createDatacenter("Datacenter_1", datacenterParameters);
-			datacenter1.setHdfsType(HDFS_DN);
+			HdfsDatacenter datacenter1 = createDatacenter("Datacenter_1", HDFS_DN, datacenterParameters);
 
-			datacenterList.add(datacenter0);
-			datacenterList.add(datacenter1);
 
 			// Third step: Create a Broker (ne serve solo uno perchè abbiamo un solo Client)
 
@@ -128,7 +126,7 @@ public class HdfsExample0 {
 			// I'll make two blocks to transfer from vm1 to vm2 and from vm1 to vm3
 
 			// HDFS BLOCKS PARAMETERS
-			int blockCount = 2;
+			int blockCount = 2;		// block count deve sempre corrispondere al numero di cloudlets!
 			int blockSize = 10000;
 
 			List<File> blockList = createBlockList(blockCount, blockSize);
@@ -222,7 +220,7 @@ public class HdfsExample0 {
 	 * @return the datacenter object
 	 * @throws ParameterException
 	 */
-	private static HdfsDatacenter createDatacenter(String name, int[] requiredValues) throws ParameterException{
+	private static HdfsDatacenter createDatacenter(String name, int hdfsType, int[] requiredValues) throws ParameterException{
 
 		//List<HdfsHost> hostList;
 		//List<Pe> peList;
@@ -264,6 +262,9 @@ public class HdfsExample0 {
 		HdfsDatacenter datacenter = null;
 		try {
 			datacenter = new HdfsDatacenter(name, characteristics, new VmAllocationPolicySimple(hostList), storageList, 0);
+			datacenter.setHdfsType(hdfsType);
+			datacenterList.add(datacenter);
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
