@@ -123,7 +123,7 @@ public class NameNode extends SimEntity {
         String fileName = data[0];
         int replicasNumber = Integer.parseInt(data[1]);
         int blockSize = Integer.parseInt(data[2]);  // blocksize in MB
-        int clientVmId = Integer.parseInt(data[3]);  // ID della client VM che invia
+        int clientBrokerId = Integer.parseInt(data[3]);  // ID della client VM che invia
 
         // nel caso sia undefined, allora il numero di replicas è quello standard del NameNode
         if (replicasNumber == 0) {
@@ -188,8 +188,13 @@ public class NameNode extends SimEntity {
             }
         }
 
+        // aggiungiamo nella hashmap il blocco nei corrispondenti data nodes in cui lo abbiamo allocato
+        for (Integer i : destinationIds){
+            getMapDataNodeToBlocks().get(i).add(fileName);
+        }
+
         // inviamo indietro al Broker che ce l'ha chiesto, la lista di VMs, che il broker poi infilerà in destVm del Cloudlet (va reimplementata destVM come lista)
-        sendNow(getMapClientToBroker().get(clientVmId), CloudSimTags.HDFS_NAMENODE_RETURN_DN_LIST, destinationIds);
+        sendNow(clientBrokerId, CloudSimTags.HDFS_NAMENODE_RETURN_DN_LIST, destinationIds);
     }
 
     @Override

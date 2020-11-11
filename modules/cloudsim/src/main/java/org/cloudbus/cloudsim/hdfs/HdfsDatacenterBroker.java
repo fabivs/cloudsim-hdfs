@@ -71,6 +71,10 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
             case CloudSimTags.HDFS_DN_CLOUDLET_RETURN:
                 processCloudletReturn(ev);
                 break;
+            // Il name node ritorna la lista di vms in cui scrivere il blocco
+            case CloudSimTags.HDFS_NAMENODE_RETURN_DN_LIST:
+                processSendDataCloudlet(ev);
+                break;
 
             // other unknown tags are processed by this method
             default:
@@ -99,12 +103,28 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
         nameNodeData.add(originalCloudlet.getRequiredFiles().get(0));
         nameNodeData.add(Integer.toString(originalCloudlet.getReplicaNum()));
         nameNodeData.add(Integer.toString(originalCloudlet.getBlockSize()));
+        nameNodeData.add(Integer.toString(getId()));
         sendNow(getNameNodeId(), CloudSimTags.HDFS_NAMENODE_WRITE_FILE, nameNodeData);
 
-        // TODO: QUESTO VA CAMBIATO, LA destVm NON È GIÀ NEL CLOUDLET, LA CHIEDIAMO AL NAMENODE (sarà una list)
+        // Il pezzo che era qui è andato ora in processSendDataCloudlet()
+
+    }
+
+    // TODO: questo metodo!
+    // Il name node ha ritornato la lista di vms in cui il file deve essere scritto, quindi...
+    protected void processSendDataCloudlet(SimEvent ev) {
+
+        // prima di tutto dobbiamo cambiare HdfsCloudlet, destVmId ora deve essere una lista di Ids in cui il cloudlet andrà
+
+        // spacchetto ev e prendo la lista di Ids delle vms
+
+        List<Integer> destinationVms = (List<Integer>) ev.getData();
+
+        // copio il pezzo dal metodo sopra (processClientCloudletReturn()) e ho fatto
 
         // set the DN VM as the new VM Id for the cloudlet
-        stagedCloudlet.setVmId(originalCloudlet.getDestVmId());
+        // TODO: PER ORA PRENDO SOLO LA PRIMA PER TESTARE CHE QUELLO FATTO FINORA FUNZIONA, la vmId di HdfsCloudlet deve essere una lista di Vms per le repliche
+        stagedCloudlet.setVmId(destinationVms.get(0));
 
         // alternativamente si può usare il metodo bind che fa la stessa cosa
         // bindCloudletToVm(cloudlet.getCloudletId(), cloudlet.getVmId());
@@ -119,6 +139,71 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
         avremo una corretta simulazione del delay per l'invio del file tramite network
         */
         submitDNCloudlets();
+
+    }
+
+
+    // deve comunicare (nel caso la vm sia per un client o per DN) al NameNode la vm che è stata creata
+    @Override
+    protected void processVmCreate(SimEvent ev) {
+        int[] data = (int[]) ev.getData();
+        int datacenterId = data[0];
+        int vmId = data[1];
+        int result = data[2];
+
+        if (result == CloudSimTags.TRUE) {
+            getVmsToDatacentersMap().put(vmId, datacenterId);
+            getVmsCreatedList().add(VmList.getById(getVmList(), vmId));
+            Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": VM #", vmId,
+                    " has been created in Datacenter #", datacenterId, ", Host #",
+                    VmList.getById(getVmsCreatedList(), vmId).getHost().getId());
+        } else {
+            Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Creation of VM #", vmId,
+                    " failed in Datacenter #", datacenterId);
+        }
+
+        incrementVmsAcks();
+
+        /* PEZZO AGGIUNTO PER HDFS NAME NODE */
+        // comunico al name node della Vm creata
+        HdfsVm tempVm = VmList.getById(getVmList(), vmId);
+        assert tempVm != null;
+        int[] tempData;
+        // nel caso sia una Client VM
+        if (tempVm.getHdfsType() == CloudSimTags.HDFS_CLIENT) {
+            tempData = new int[]{tempVm.getId(), getId()};
+            sendNow(nameNodeId, CloudSimTags.HDFS_NAMENODE_ADD_CLIENT, tempData);
+        }
+        // nel caso sia una DN VM
+        if (tempVm.getHdfsType() == CloudSimTags.HDFS_DN) {
+            tempData = new int[]{tempVm.getId(), tempVm.getHost().getDatacenter().getId()};
+            sendNow(nameNodeId, CloudSimTags.HDFS_NAMENODE_ADD_DN, tempData);
+        }
+
+        // all the requested VMs have been created
+        if (getVmsCreatedList().size() == getVmList().size() - getVmsDestroyed()) {
+            submitCloudlets();
+        } else {
+            // all the acks received, but some VMs were not created
+            if (getVmsRequested() == getVmsAcks()) {
+                // find id of the next datacenter that has not been tried
+                for (int nextDatacenterId : getDatacenterIdsList()) {
+                    if (!getDatacenterRequestedIdsList().contains(nextDatacenterId)) {
+                        createVmsInDatacenter(nextDatacenterId);
+                        return;
+                    }
+                }
+
+                // all datacenters already queried
+                if (getVmsCreatedList().size() > 0) { // if some vm were created
+                    submitCloudlets();
+                } else { // no vms created. abort
+                    Log.printLine(CloudSim.clock() + ": " + getName()
+                            + ": none of the required VMs could be created. Aborting");
+                    finishExecution();
+                }
+            }
+        }
     }
 
     /**
