@@ -18,8 +18,12 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
 
     protected int currentCloudletMaxId;
 
+    protected int nameNodeId;
+
+    protected HdfsCloudlet stagedCloudlet;
+
     /**
-     * Created a new DatacenterBroker object.
+     * Created a new DatacenterBroker object. Remember to set the name node as well after creation!
      *
      * @param name name to be associated with this entity (as required by {@link SimEntity} class)
      * @throws Exception the exception
@@ -85,18 +89,27 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
                 ": the block has been read, sending it to the Data Node...");
 
         // non molto elegante, ma dovrebbe funzionare lol, da qualche parte sto metodo lo devo prendere
-        HdfsCloudlet newCloudlet = originalCloudlet.cloneCloudletAssignNewId(originalCloudlet, currentCloudletMaxId + 1);
+        stagedCloudlet = HdfsCloudlet.cloneCloudletAssignNewId(originalCloudlet, currentCloudletMaxId + 1);
 
         // store the original vm id, so we can keep track of whose block it is in the DN
-        newCloudlet.setSourceVmId(originalCloudlet.getVmId());
+        stagedCloudlet.setSourceVmId(originalCloudlet.getVmId());
+
+        // now the only thing left to do is to set the list of destination vms, for which the NameNode is needed
+        List<String> nameNodeData = new ArrayList<String>();
+        nameNodeData.add(originalCloudlet.getRequiredFiles().get(0));
+        nameNodeData.add(Integer.toString(originalCloudlet.getReplicaNum()));
+        sendNow(getNameNodeId(), CloudSimTags.HDFS_NAMENODE_WRITE_FILE, nameNodeData);
+
+        // TODO: QUESTO VA CAMBIATO, LA destVm NON È GIÀ NEL CLOUDLET, LA CHIEDIAMO AL NAMENODE (sarà una list)
+
         // set the DN VM as the new VM Id for the cloudlet
-        newCloudlet.setVmId(originalCloudlet.getDestVmId());    // TODO: QUESTO VA CAMBIATO, LA destVm NON È GIÀ NEL CLOUDLET, LA CHIEDIAMO AL NAMENODE (sarà una list)
+        stagedCloudlet.setVmId(originalCloudlet.getDestVmId());
 
         // alternativamente si può usare il metodo bind che fa la stessa cosa
         // bindCloudletToVm(cloudlet.getCloudletId(), cloudlet.getVmId());
 
         // add the cloudlet to the list of submitted cloudlets
-        getCloudletList().add(newCloudlet);
+        getCloudletList().add(stagedCloudlet);
 
         // non so se prima settare la VM e poi aggiungere alla CloudletList, o se fare il contrario, vedremo...
 
@@ -192,5 +205,13 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
 
         // remove submitted cloudlets from waiting list
         getCloudletList().removeAll(successfullySubmitted);
+    }
+
+    public int getNameNodeId() {
+        return nameNodeId;
+    }
+
+    public void setNameNodeId(int nameNodeId) {
+        this.nameNodeId = nameNodeId;
     }
 }

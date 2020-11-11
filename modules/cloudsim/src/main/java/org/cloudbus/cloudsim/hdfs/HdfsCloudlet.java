@@ -1,6 +1,7 @@
 package org.cloudbus.cloudsim.hdfs;
 
 import org.cloudbus.cloudsim.Cloudlet;
+import org.cloudbus.cloudsim.File;
 import org.cloudbus.cloudsim.UtilizationModel;
 
 import java.util.List;
@@ -18,22 +19,38 @@ public class HdfsCloudlet extends Cloudlet {
     // the id of the Data Node VM where the data block will be written
     protected int destVmId;
 
+    // the required file (Cloudlet has a List of required files, but for my model, I just need a single file)
+    protected File requiredFile;    // TODO: sistemare questa storia eventualmente
+
     // we need this to have the information necessary to simulate the write in the DN, we can't simply search it
     // by name like in the Client, because the file is not already present in the Database
     protected int blockSize;
 
-
+    // number of replicas desired for the file of this cloudlet
+    protected int replicaNum;
 
     /**
-     * Non so se i costruttori vanno reimplementati tutti, quindi per ora ho messo solo quello che mi interessa, esteso
+     * Non so se i costruttori vanno re-implementati tutti, quindi per ora ho messo solo quello che mi interessa, esteso
      * come serve a me (ho aggiunto hdfsBlock, che contiene le info per la scrittura del file nel DN)
      */
 
     public HdfsCloudlet(int cloudletId, long cloudletLength, int pesNumber, long cloudletFileSize, long cloudletOutputSize,
                         UtilizationModel utilizationModelCpu, UtilizationModel utilizationModelRam, UtilizationModel utilizationModelBw,
+                        List<String> fileList, int blockSize, int replicaNum) {
+        super(cloudletId, cloudletLength, pesNumber, cloudletFileSize, cloudletOutputSize, utilizationModelCpu, utilizationModelRam, utilizationModelBw, fileList);
+        this.blockSize = blockSize;
+        this.replicaNum = replicaNum;
+        // by default the type will be Data Node, this is because I made this change after writing all the file transfer code
+        this.hdfsType = HDFS_DN;
+    }
+
+    // costruttore nel caso non è specificato il numero di repliche (il valore è settato a 0)
+    public HdfsCloudlet(int cloudletId, long cloudletLength, int pesNumber, long cloudletFileSize, long cloudletOutputSize,
+                        UtilizationModel utilizationModelCpu, UtilizationModel utilizationModelRam, UtilizationModel utilizationModelBw,
                         List<String> fileList, int blockSize) {
         super(cloudletId, cloudletLength, pesNumber, cloudletFileSize, cloudletOutputSize, utilizationModelCpu, utilizationModelRam, utilizationModelBw, fileList);
         this.blockSize = blockSize;
+        this.replicaNum = 0;
         // by default the type will be Data Node, this is because I made this change after writing all the file transfer code
         this.hdfsType = HDFS_DN;
     }
@@ -96,5 +113,13 @@ public class HdfsCloudlet extends Cloudlet {
 
     public void setBlockSize(int blockSize) {
         this.blockSize = blockSize;
+    }
+
+    public int getReplicaNum() {
+        return replicaNum;
+    }
+
+    public void setReplicaNum(int replicaNum) {
+        this.replicaNum = replicaNum;
     }
 }

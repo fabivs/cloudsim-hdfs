@@ -18,11 +18,14 @@ public class NameNode extends SimEntity {
     // the list of clients
     protected List<? extends Vm> clientList;
 
+    // maps every client with its own broker (ogni client corrisponde a un broker nella mia simulazione)
+    protected Map<Integer, Integer> mapClientToBroker;
+
     // the NameNode knows about every DataNode (vm)
     protected List<? extends Vm> dataNodeList;
 
     // maps every DataNode (vm) ID with the list of blocks it contains as filenames
-    protected Map<Integer, List<String>> mapVmToBlocks = new HashMap<Integer, List<String>>();
+    protected Map<Integer, List<String>> mapVmToBlocks;
 
     // the default number of replicas per block
     protected int defaultReplicas;
@@ -39,6 +42,8 @@ public class NameNode extends SimEntity {
         super(name);
 
         setClientList(new ArrayList<HdfsVm>());
+        setMapClientToBroker(new HashMap<Integer, Integer>());
+
         setDataNodeList(new ArrayList<HdfsVm>());
         setMapVmToBlocks(new HashMap<Integer, List<String>>());
 
@@ -82,6 +87,8 @@ public class NameNode extends SimEntity {
 
     // adding a new Client to the list of current Clients
     protected void processAddClient(SimEvent ev){
+
+
 
         HdfsVm clientVm = (HdfsVm) ev.getData();
         getClientList().add(clientVm);
@@ -184,6 +191,14 @@ public class NameNode extends SimEntity {
 
     public void setDefaultReplicas(int defaultReplicas) {
         this.defaultReplicas = defaultReplicas;
+    }
+
+    public Map<Integer, Integer> getMapClientToBroker() {
+        return mapClientToBroker;
+    }
+
+    public void setMapClientToBroker(Map<Integer, Integer> mapClientToBroker) {
+        this.mapClientToBroker = mapClientToBroker;
     }
 
     /*
