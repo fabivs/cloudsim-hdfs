@@ -90,7 +90,7 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
         // store the original vm id, so we can keep track of whose block it is in the DN
         newCloudlet.setSourceVmId(originalCloudlet.getVmId());
         // set the DN VM as the new VM Id for the cloudlet
-        newCloudlet.setVmId(originalCloudlet.getDestVmId());
+        newCloudlet.setVmId(originalCloudlet.getDestVmId());    // TODO: QUESTO VA CAMBIATO, LA destVm NON È GIÀ NEL CLOUDLET, LA CHIEDIAMO AL NAMENODE (sarà una list)
 
         // alternativamente si può usare il metodo bind che fa la stessa cosa
         // bindCloudletToVm(cloudlet.getCloudletId(), cloudlet.getVmId());

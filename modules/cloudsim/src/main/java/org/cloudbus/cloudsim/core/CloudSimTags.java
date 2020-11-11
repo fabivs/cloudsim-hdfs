@@ -298,6 +298,11 @@ public class CloudSimTags {
 	public static final int HDFS_CLIENT = BASE + 55;
 	public static final int HDFS_DN = BASE + 56;
 
+	// Name Node
+	public static final int HDFS_NAMENODE_ADD_DN = BASE + 57;
+	public static final int HDFS_NAMENODE_ADD_CLIENT = BASE + 58;
+	public static final int HDFS_NAMENODE_WRITE_FILE = BASE + 59;
+
 	/** Private Constructor. */
 	private CloudSimTags() {
 		throw new UnsupportedOperationException("CloudSimTags cannot be instantiated");
