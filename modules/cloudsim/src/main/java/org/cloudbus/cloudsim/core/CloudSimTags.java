@@ -302,6 +302,7 @@ public class CloudSimTags {
 	public static final int HDFS_NAMENODE_ADD_DN = BASE + 57;
 	public static final int HDFS_NAMENODE_ADD_CLIENT = BASE + 58;
 	public static final int HDFS_NAMENODE_WRITE_FILE = BASE + 59;
+	public static final int HDFS_NAMENODE_RETURN_DN_LIST = BASE + 60;
 
 	/** Private Constructor. */
 	private CloudSimTags() {

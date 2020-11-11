@@ -98,6 +98,7 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
         List<String> nameNodeData = new ArrayList<String>();
         nameNodeData.add(originalCloudlet.getRequiredFiles().get(0));
         nameNodeData.add(Integer.toString(originalCloudlet.getReplicaNum()));
+        nameNodeData.add(Integer.toString(originalCloudlet.getBlockSize()));
         sendNow(getNameNodeId(), CloudSimTags.HDFS_NAMENODE_WRITE_FILE, nameNodeData);
 
         // TODO: QUESTO VA CAMBIATO, LA destVm NON È GIÀ NEL CLOUDLET, LA CHIEDIAMO AL NAMENODE (sarà una list)

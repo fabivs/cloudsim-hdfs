@@ -1,31 +1,33 @@
 package org.cloudbus.cloudsim.hdfs;
 
-import org.cloudbus.cloudsim.Cloudlet;
-import org.cloudbus.cloudsim.DatacenterCharacteristics;
+import org.cloudbus.cloudsim.Datacenter;
+import org.cloudbus.cloudsim.Host;
 import org.cloudbus.cloudsim.Log;
 import org.cloudbus.cloudsim.Vm;
+import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.core.CloudSimTags;
 import org.cloudbus.cloudsim.core.SimEntity;
 import org.cloudbus.cloudsim.core.SimEvent;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.lang.reflect.Array;
+import java.util.*;
 
 public class NameNode extends SimEntity {
 
     // the list of clients
-    protected List<? extends Vm> clientList;
+    protected List<Integer> clientList;
 
     // maps every client with its own broker (ogni client corrisponde a un broker nella mia simulazione)
     protected Map<Integer, Integer> mapClientToBroker;
 
     // the NameNode knows about every DataNode (vm)
-    protected List<? extends Vm> dataNodeList;
+    protected List<Integer> dataNodeList;
+
+    // each DataNode is also mapped to the Datacenter to which it belongs
+    protected Map<Integer, Integer> mapDataNodeToDatacenter;
 
     // maps every DataNode (vm) ID with the list of blocks it contains as filenames
-    protected Map<Integer, List<String>> mapVmToBlocks;
+    protected Map<Integer, List<String>> mapDataNodeToBlocks;
 
     // the default number of replicas per block
     protected int defaultReplicas;
@@ -41,11 +43,12 @@ public class NameNode extends SimEntity {
     public NameNode(String name, int defaultBlockSize, int defaultReplicas) {
         super(name);
 
-        setClientList(new ArrayList<HdfsVm>());
+        setClientList(new ArrayList<Integer>());
         setMapClientToBroker(new HashMap<Integer, Integer>());
 
-        setDataNodeList(new ArrayList<HdfsVm>());
-        setMapVmToBlocks(new HashMap<Integer, List<String>>());
+        setDataNodeList(new ArrayList<Integer>());
+        setMapDataNodeToDatacenter(new HashMap<Integer, Integer>());
+        setMapDataNodeToBlocks(new HashMap<Integer, List<String>>());
 
         // setDefaultBlockSize(defaultBlockSize);
         setDefaultReplicas(defaultReplicas);
@@ -86,47 +89,107 @@ public class NameNode extends SimEntity {
     }
 
     // adding a new Client to the list of current Clients
+    // ev contiene: int del client vm id, int del brokerId
     protected void processAddClient(SimEvent ev){
 
+        int[] data = (int[]) ev.getData();
+        int currentClientId = data[0];
+        int currentBrokerId = data[1];
 
-
-        HdfsVm clientVm = (HdfsVm) ev.getData();
-        getClientList().add(clientVm);
+        getClientList().add(currentClientId);
+        // aggiunge alla mappa il client id e il corrispondente broker id, necessario per rispedire indietro gli eventi
+        getMapClientToBroker().put(currentClientId, currentBrokerId);
     }
 
     // adding a new DataNode to the list of current DataNodes
     protected void processAddDataNode(SimEvent ev){
 
-        HdfsVm dataVm = (HdfsVm) ev.getData();
-        getDataNodeList().add(dataVm);
+        int[] data = (int[]) ev.getData();
+        int currentDataNodeId = data[0];
+        int currentDatacenterId = data[1];
+
+        getDataNodeList().add(currentDataNodeId);
+        getMapDataNodeToDatacenter().put(currentDataNodeId, currentDatacenterId);
 
     }
 
     // writing a new File (Block) to the HDFS cluster
     // the NameNode decides in which destination VMs the file and its replicas are supposed to go
-    // l'evento ev è un array che contiene: String nome del file, String: preferred number of replicas
+    // l'evento ev è un array che contiene: String nome del file, String: preferred number of replicas, String: blocksize
     protected void processWriteFile(SimEvent ev){
 
         String[] data = (String[]) ev.getData();
 
         String fileName = data[0];
         int replicasNumber = Integer.parseInt(data[1]);
+        int blockSize = Integer.parseInt(data[2]);  // blocksize in MB
+        int clientVmId = Integer.parseInt(data[3]);  // ID della client VM che invia
 
         // nel caso sia undefined, allora il numero di replicas è quello standard del NameNode
         if (replicasNumber == 0) {
             replicasNumber = defaultReplicas;
         }
 
-        // dobbiamo controllare in quali DataNodes VMs il file è già presente
+        // il risultato finale da ritornare al broker
+        List<Integer> destinationIds = new ArrayList<Integer>();
+
+        // dobbiamo controllare in quali DataNode VMs il file è già presente
+
+        List<Integer> primaryVms = new ArrayList<Integer>();
+        // queste saranno le vms in cui il blocco c'è già, però c'è abbastanza spazio per scriverne un altro
+        List<Integer> secondaryVms = new ArrayList<Integer>();
+
+        for (int iterDataNode : getMapDataNodeToBlocks().keySet()){
+            secondaryVms.add(iterDataNode);
+            if (!getMapDataNodeToBlocks().get(iterDataNode).contains(fileName)){
+                primaryVms.add(iterDataNode);
+                secondaryVms.remove(iterDataNode);
+            }
+        }
+
+        // eliminiamo dalla lista di free vms quelle in cui non c'è abbastanza spazio per salvare il blocco
+        // nota: vado a controllare nell'host dove è allocata quella vm se c'è abbastanza storage space
+
+        for (Integer currentVm : primaryVms){
+            // get the datacenter corresponding to that vm
+            HdfsDatacenter currentDataCenter = (HdfsDatacenter) CloudSim.getEntity(getMapDataNodeToDatacenter().get(currentVm));
+            // search inside all hosts
+            for (Host iterHost : currentDataCenter.getHostList()){
+                // for each host, search inside the allocated vms in that host
+                for (Vm iterVm : iterHost.getVmList()){
+                    // when iterVm is the actual vm we are looking for, it means that this host contains that vm
+                    if (iterVm.getId() == currentVm){
+                        HdfsHost test = (HdfsHost) iterHost;
+                        if (test.getProperStorage().getAvailableSpace() < blockSize)
+                            primaryVms.remove(currentVm);
+                            secondaryVms.remove(currentVm);
+                    }
+                }
+            }
+
+        }
 
         // assegniamo da scrivere il file in tot. DataNodes, quante sono le replicas, in cui il file non c'è già
-
         // bisogna controllare anche che nel DataNode ci sia enough space per assegnare il file (serve il blocksize lol)
 
-        // in caso non ci dovessero essere data nodes liberi, assegniamo a uno a caso sennò dovremmo dare errore e non va bene
+        if (primaryVms.size() >= replicasNumber){
+            for (int i = 0; i < replicasNumber; i++){
+                destinationIds.add(primaryVms.get(i));
+            }
+        }
+
+        // se le vms libere sono meno delle repliche da scrivere: usiamo le vms che abbiamo prima,
+        // dopodichè usiamo vms in cui c'è almeno abbastanza spazio per scrivere il blocco di nuovo
+        if (primaryVms.size() < replicasNumber){
+            destinationIds.addAll(primaryVms);  // aggiungiamo tutte le primary vms che abbiamo
+
+            for (int i = 0; i < (replicasNumber - primaryVms.size()); i++){
+                destinationIds.add(secondaryVms.get(i));    // usiamo come rimanenti repliche quelle da secondary vms, dove il blocco c'è già, ma almeno c'è spazio
+            }
+        }
 
         // inviamo indietro al Broker che ce l'ha chiesto, la lista di VMs, che il broker poi infilerà in destVm del Cloudlet (va reimplementata destVM come lista)
-
+        sendNow(getMapClientToBroker().get(clientVmId), CloudSimTags.HDFS_NAMENODE_RETURN_DN_LIST, destinationIds);
     }
 
     @Override
@@ -158,31 +221,31 @@ public class NameNode extends SimEntity {
     // GETTERS AND SETTERS
 
     @SuppressWarnings("unchecked")
-    public <T extends Vm> List<T> getClientList() {
-        return (List<T>) clientList;
+    public List<Integer> getClientList() {
+        return clientList;
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends Vm> void setClientList(List<T> clientList) {
+    public void setClientList(List<Integer> clientList) {
         this.clientList = clientList;
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends Vm> List<T> getDataNodeList() {
-        return (List<T>) dataNodeList;
+    public List<Integer> getDataNodeList() {
+        return dataNodeList;
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends Vm> void setDataNodeList(List<T> dataNodeList) {
+    public void setDataNodeList(List<Integer> dataNodeList) {
         this.dataNodeList = dataNodeList;
     }
 
-    public Map<Integer, List<String>> getMapVmToBlocks() {
-        return mapVmToBlocks;
+    public Map<Integer, List<String>> getMapDataNodeToBlocks() {
+        return mapDataNodeToBlocks;
     }
 
-    public void setMapVmToBlocks(Map<Integer, List<String>> mapVmToBlocks) {
-        this.mapVmToBlocks = mapVmToBlocks;
+    public void setMapDataNodeToBlocks(Map<Integer, List<String>> mapDataNodeToBlocks) {
+        this.mapDataNodeToBlocks = mapDataNodeToBlocks;
     }
 
     public int getDefaultReplicas() {
@@ -199,6 +262,14 @@ public class NameNode extends SimEntity {
 
     public void setMapClientToBroker(Map<Integer, Integer> mapClientToBroker) {
         this.mapClientToBroker = mapClientToBroker;
+    }
+
+    public Map<Integer, Integer> getMapDataNodeToDatacenter() {
+        return mapDataNodeToDatacenter;
+    }
+
+    public void setMapDataNodeToDatacenter(Map<Integer, Integer> mapDataNodeToDatacenter) {
+        this.mapDataNodeToDatacenter = mapDataNodeToDatacenter;
     }
 
     /*
