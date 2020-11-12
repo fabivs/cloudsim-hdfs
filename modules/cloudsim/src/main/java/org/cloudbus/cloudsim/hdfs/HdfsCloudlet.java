@@ -3,6 +3,7 @@ package org.cloudbus.cloudsim.hdfs;
 import org.cloudbus.cloudsim.Cloudlet;
 import org.cloudbus.cloudsim.File;
 import org.cloudbus.cloudsim.UtilizationModel;
+import org.cloudbus.cloudsim.UtilizationModelFull;
 
 import java.util.List;
 
@@ -17,7 +18,7 @@ public class HdfsCloudlet extends Cloudlet {
     protected int sourceVmId;
 
     // the id of the Data Node VM where the data block will be written
-    protected int destVmId;
+    protected List<Integer> destVmIds;
 
     // the required file (Cloudlet has a List of required files, but for my model, I just need a single file)
     protected File requiredFile;    // TODO: sistemare questa storia eventualmente
@@ -65,9 +66,10 @@ public class HdfsCloudlet extends Cloudlet {
         int pesNumber = cl.getNumberOfPes();
         long cloudletFileSize = cl.getCloudletFileSize();
         long cloudletOutputSize = cl.getCloudletOutputSize();
-        UtilizationModel utilizationModelCpu = cl.getUtilizationModelCpu();
-        UtilizationModel utilizationModelRam = cl.getUtilizationModelRam();
-        UtilizationModel utilizationModelBw = cl.getUtilizationModelBw();
+        // TODO: per ora re-instanzio tutto come utilization model full, dovrei controllare che utilization model usa il cloudlet originale, ma uso solo full for now
+        UtilizationModel utilizationModelCpu = new UtilizationModelFull();
+        UtilizationModel utilizationModelRam = new UtilizationModelFull();
+        UtilizationModel utilizationModelBw = new UtilizationModelFull();
         List<String> fileList = cl.getRequiredFiles();
         int blockSize = cl.getBlockSize();
 
@@ -99,12 +101,12 @@ public class HdfsCloudlet extends Cloudlet {
         this.sourceVmId = sourceVmId;
     }
 
-    public int getDestVmId() {
-        return destVmId;
+    public List<Integer> getDestVmIds() {
+        return destVmIds;
     }
 
-    public void setDestVmId(final int destVmId) {
-        this.destVmId = destVmId;
+    public void setDestVmIds(final List<Integer> destVmIds) {
+        this.destVmIds = destVmIds;
     }
 
     public int getBlockSize() {

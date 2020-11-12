@@ -13,7 +13,6 @@ import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.hdfs.*;
 
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedList;
@@ -153,8 +152,9 @@ public class HdfsExample0 {
 
 			// set the destination vm id for the cloudlets
 			// queste saranno le VM di destinazione in cui vanno scritti i blocchi HDFS
-			cloudlet1.setDestVmId(vmList.get(1).getId());	// vm #2
-			cloudlet2.setDestVmId(vmList.get(2).getId());	// vm #3
+			// TODO: ovviamente questo ora non funziona più, che è una lista di vms
+			//cloudlet1.setDestVmIds(vmList.get(1).getId());	// vm #2
+			//cloudlet2.setDestVmIds(vmList.get(2).getId());	// vm #3
 
 			// add the cloudlets to the list
 			cloudletList.add(cloudlet1);

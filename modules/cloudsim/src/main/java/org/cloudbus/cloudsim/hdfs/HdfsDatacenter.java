@@ -15,11 +15,14 @@ public class HdfsDatacenter extends Datacenter {
     // either a HDFS_CLIENT or HDFS_DN, which is going to be the role of the vms inside this Datacenter
     protected int hdfsType;
 
+    // the replication broker for the data center
+    protected int replicationBrokerId;
+
     // creating a new variable with the same name as the super, to make it accessible through a getter
     private List<Storage> storageList;
 
     /**
-     * Allocates a new Datacenter object.
+     * Allocates a new Datacenter object. COSTRUTTORE PER I DATACENTERS DEI CLIENTS.
      *
      * @param name               the name to be associated with this entity (as required by the super class)
      * @param characteristics    the characteristics of the datacenter to be created
@@ -43,6 +46,18 @@ public class HdfsDatacenter extends Datacenter {
         super(name, characteristics, vmAllocationPolicy, storageList, schedulingInterval);
 
         fileNameCounter = 0;
+        setHdfsType(CloudSimTags.HDFS_CLIENT);
+    }
+
+    // costruttore per i data centers dei data nodes, gli serve sapere l'id del replication broker
+    public HdfsDatacenter(String name, int replicationBrokerId, DatacenterCharacteristics characteristics, VmAllocationPolicy vmAllocationPolicy,
+                          List<Storage> storageList, double schedulingInterval) throws Exception {
+        super(name, characteristics, vmAllocationPolicy, storageList, schedulingInterval);
+
+        fileNameCounter = 0;
+        setReplicationBrokerId(replicationBrokerId);
+        setHdfsType(CloudSimTags.HDFS_DN);
+
     }
 
     // adds the files in the list as a series of separate files
@@ -73,6 +88,14 @@ public class HdfsDatacenter extends Datacenter {
     @Override
     public void setStorageList(List<Storage> storageList) {
         this.storageList = storageList;
+    }
+
+    public int getReplicationBrokerId() {
+        return replicationBrokerId;
+    }
+
+    public void setReplicationBrokerId(int replicationBrokerId) {
+        this.replicationBrokerId = replicationBrokerId;
     }
 
     // NEW METHODS
@@ -420,6 +443,15 @@ public class HdfsDatacenter extends Datacenter {
 
             // il tempo necessario per leggere i requiredFiles dal disco
             double fileTransferTime = writeAndPredictTime(cl.getSourceVmId(), cl.getBlockSize());
+
+            // REPLICATION:
+            // il tempo necessario per leggere i requiredFiles dal disco
+            double fileReadTime = predictFileTransferTime(cl.getRequiredFiles());
+
+            // dopo aver letto il file inviamo al replication broker il messaggio per creare la prossima replica
+            send(replicationBrokerId, fileReadTime, CloudSimTags.HDFS_DN_CLOUDLET_RETURN, cl);
+
+
 
             // troviamo l'host in cui si trova la vm del cloudlet
             Host host = getVmAllocationPolicy().getHost(vmId, userId);

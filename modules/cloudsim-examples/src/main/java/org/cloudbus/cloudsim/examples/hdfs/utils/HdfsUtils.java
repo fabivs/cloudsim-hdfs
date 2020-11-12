@@ -57,7 +57,7 @@ public final class HdfsUtils {
                     utilizationModel, utilizationModel, blockList, blockSize);
             // setting the owner of these Cloudlets
             cloudlet[i].setUserId(userId);
-            cloudlet[i].setDestVmId(destId);
+            cloudlet[i].setDestVmIds(destId);
             list.add(cloudlet[i]);
         }
 

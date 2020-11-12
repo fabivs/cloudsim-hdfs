@@ -35,6 +35,12 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
         currentCloudletMaxId = 0;
     }
 
+    // COSTRUTTORE PER I REPLICATION BROKERS, settare il cloudlet max ID a un numero più alto, ad esempio +100
+    public HdfsDatacenterBroker(String name, int cloudletStartId) throws Exception {
+        super(name);
+        currentCloudletMaxId = cloudletStartId;
+    }
+
     @Override
     public void processEvent(SimEvent ev) {
         switch (ev.getTag()) {
@@ -67,9 +73,9 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
             case CloudSimTags.HDFS_CLIENT_CLOUDLET_RETURN:
                 processClientCloudletReturn(ev);
                 break;
-            // A finished cloudlet returned (PROBABILMENTE NON È NECESSARIO, PER ORA È REDUNDANT)
+            // A finished DN cloudlet returns, this is used for REPLICATION
             case CloudSimTags.HDFS_DN_CLOUDLET_RETURN:
-                processCloudletReturn(ev);
+                processSendReplicaCloudlet(ev);
                 break;
             // Il name node ritorna la lista di vms in cui scrivere il blocco
             case CloudSimTags.HDFS_NAMENODE_RETURN_DN_LIST:
@@ -114,8 +120,6 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
     // Il name node ha ritornato la lista di vms in cui il file deve essere scritto, quindi...
     protected void processSendDataCloudlet(SimEvent ev) {
 
-        // prima di tutto dobbiamo cambiare HdfsCloudlet, destVmId ora deve essere una lista di Ids in cui il cloudlet andrà
-
         // spacchetto ev e prendo la lista di Ids delle vms
 
         List<Integer> destinationVms = (List<Integer>) ev.getData();
@@ -123,8 +127,55 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
         // copio il pezzo dal metodo sopra (processClientCloudletReturn()) e ho fatto
 
         // set the DN VM as the new VM Id for the cloudlet
-        // TODO: PER ORA PRENDO SOLO LA PRIMA PER TESTARE CHE QUELLO FATTO FINORA FUNZIONA, la vmId di HdfsCloudlet deve essere una lista di Vms per le repliche
+
         stagedCloudlet.setVmId(destinationVms.get(0));
+
+        // ora rimuovo la prima vm dalla lista di destination vms e la aggiungo a destVmIds
+        destinationVms.remove(0);
+        stagedCloudlet.setDestVmIds(destinationVms);
+
+        // alternativamente si può usare il metodo bind che fa la stessa cosa
+        // bindCloudletToVm(cloudlet.getCloudletId(), cloudlet.getVmId());
+
+        // add the cloudlet to the list of submitted cloudlets
+        getCloudletList().add(stagedCloudlet);
+
+        // non so se prima settare la VM e poi aggiungere alla CloudletList, o se fare il contrario, vedremo...
+
+        /* ri-eseguiamo questo metodo, che ora troverà il nuovo unbound cloudlet nella lista, e lo invierà
+        alla VM appropriata, inoltre settando la posizione del broker uguale a quella del client nella topology,
+        avremo una corretta simulazione del delay per l'invio del file tramite network
+        */
+        submitDNCloudlets();
+
+    }
+
+    // Identico a processSendReplicaCloudlet però riceve come evento un HdfsCloudlet intero da rigirare alla prossima destinazione
+    protected void processSendReplicaCloudlet(SimEvent ev) {
+
+        HdfsCloudlet originalCloudlet = (HdfsCloudlet) ev.getData();
+
+        Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": ReplicationCloudlet ", originalCloudlet.getCloudletId(),
+                ": the block has been read, sending it to the Data Node...");
+
+        // non molto elegante, ma dovrebbe funzionare lol, da qualche parte sto metodo lo devo prendere
+        stagedCloudlet = HdfsCloudlet.cloneCloudletAssignNewId(originalCloudlet, currentCloudletMaxId + 1);
+
+        // store the original vm id, so we can keep track of whose block it is in the DN
+        stagedCloudlet.setSourceVmId(originalCloudlet.getVmId());
+
+        // get the destination vms list
+        List<Integer> destinationVms = originalCloudlet.getDestVmIds();
+
+        // copio il pezzo dal metodo sopra (processClientCloudletReturn()) e ho fatto
+
+        // set the DN VM as the new VM Id for the cloudlet
+
+        stagedCloudlet.setVmId(destinationVms.get(0));
+
+        // ora rimuovo la prima vm dalla lista di destination vms e la aggiungo a destVmIds
+        destinationVms.remove(0);
+        stagedCloudlet.setDestVmIds(destinationVms);
 
         // alternativamente si può usare il metodo bind che fa la stessa cosa
         // bindCloudletToVm(cloudlet.getCloudletId(), cloudlet.getVmId());
