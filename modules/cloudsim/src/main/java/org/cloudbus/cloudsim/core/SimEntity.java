@@ -94,6 +94,7 @@ public abstract class SimEntity implements Cloneable {
 		if (!CloudSim.running()) {
 			return;
 		}
+
 		CloudSim.send(id, dest, delay, tag, data);
 	}
 

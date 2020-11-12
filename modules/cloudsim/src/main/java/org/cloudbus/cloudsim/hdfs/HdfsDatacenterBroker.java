@@ -150,7 +150,7 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
 
     }
 
-    // Identico a processSendReplicaCloudlet però riceve come evento un HdfsCloudlet intero da rigirare alla prossima destinazione
+    // Identico a processSendDataCloudlet però riceve come evento un HdfsCloudlet intero da rigirare alla prossima destinazione
     protected void processSendReplicaCloudlet(SimEvent ev) {
 
         HdfsCloudlet originalCloudlet = (HdfsCloudlet) ev.getData();
@@ -166,6 +166,11 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
 
         // get the destination vms list
         List<Integer> destinationVms = originalCloudlet.getDestVmIds();
+
+        if (destinationVms.isEmpty()){
+            Log.printLine("The replication pipeline is over");
+            return;
+        }
 
         // copio il pezzo dal metodo sopra (processClientCloudletReturn()) e ho fatto
 
@@ -208,6 +213,23 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
             Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": VM #", vmId,
                     " has been created in Datacenter #", datacenterId, ", Host #",
                     VmList.getById(getVmsCreatedList(), vmId).getHost().getId());
+
+            /* PEZZO AGGIUNTO PER HDFS NAME NODE */
+            // comunico al name node della Vm creata
+            HdfsVm tempVm = VmList.getById(getVmList(), vmId);
+            assert tempVm != null;
+            int[] tempData;
+            // nel caso sia una Client VM
+            if (tempVm.getHdfsType() == CloudSimTags.HDFS_CLIENT) {
+                tempData = new int[]{tempVm.getId(), getId()};
+                sendNow(nameNodeId, CloudSimTags.HDFS_NAMENODE_ADD_CLIENT, tempData);
+            }
+            // nel caso sia una DN VM
+            if (tempVm.getHdfsType() == CloudSimTags.HDFS_DN) {
+                tempData = new int[]{tempVm.getId(), datacenterId};
+                sendNow(nameNodeId, CloudSimTags.HDFS_NAMENODE_ADD_DN, tempData);
+            }
+
         } else {
             Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Creation of VM #", vmId,
                     " failed in Datacenter #", datacenterId);
@@ -215,24 +237,9 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
 
         incrementVmsAcks();
 
-        /* PEZZO AGGIUNTO PER HDFS NAME NODE */
-        // comunico al name node della Vm creata
-        HdfsVm tempVm = VmList.getById(getVmList(), vmId);
-        assert tempVm != null;
-        int[] tempData;
-        // nel caso sia una Client VM
-        if (tempVm.getHdfsType() == CloudSimTags.HDFS_CLIENT) {
-            tempData = new int[]{tempVm.getId(), getId()};
-            sendNow(nameNodeId, CloudSimTags.HDFS_NAMENODE_ADD_CLIENT, tempData);
-        }
-        // nel caso sia una DN VM
-        if (tempVm.getHdfsType() == CloudSimTags.HDFS_DN) {
-            tempData = new int[]{tempVm.getId(), tempVm.getHost().getDatacenter().getId()};
-            sendNow(nameNodeId, CloudSimTags.HDFS_NAMENODE_ADD_DN, tempData);
-        }
-
         // all the requested VMs have been created
         if (getVmsCreatedList().size() == getVmList().size() - getVmsDestroyed()) {
+
             submitCloudlets();
         } else {
             // all the acks received, but some VMs were not created

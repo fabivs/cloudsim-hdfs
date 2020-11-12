@@ -45,7 +45,7 @@ public final class HdfsUtils {
     }
 
     // crea una lista di Cloudlets da submittare al broker
-    public static List<HdfsCloudlet> createCloudletList(int userId, int count, int destId, long length, long fileSize, long outputSize,
+    public static List<HdfsCloudlet> createCloudletList(int userId, int count, long length, long fileSize, long outputSize,
                                                         int pesNumber, UtilizationModel utilizationModel, List<String> blockList, int blockSize){
 
         LinkedList<HdfsCloudlet> list = new LinkedList<HdfsCloudlet>();
@@ -57,7 +57,6 @@ public final class HdfsUtils {
                     utilizationModel, utilizationModel, blockList, blockSize);
             // setting the owner of these Cloudlets
             cloudlet[i].setUserId(userId);
-            cloudlet[i].setDestVmIds(destId);
             list.add(cloudlet[i]);
         }
 

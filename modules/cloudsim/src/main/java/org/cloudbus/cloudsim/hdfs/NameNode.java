@@ -96,9 +96,12 @@ public class NameNode extends SimEntity {
         int currentClientId = data[0];
         int currentBrokerId = data[1];
 
-        getClientList().add(currentClientId);
+        Log.printLine(getName() + ": Received client VM of ID " + currentClientId + ", belonging to broker " + currentBrokerId);
+
+
+        this.clientList.add(currentClientId);
         // aggiunge alla mappa il client id e il corrispondente broker id, necessario per rispedire indietro gli eventi
-        getMapClientToBroker().put(currentClientId, currentBrokerId);
+        this.mapClientToBroker.put(currentClientId, currentBrokerId);
     }
 
     // adding a new DataNode to the list of current DataNodes
@@ -108,8 +111,11 @@ public class NameNode extends SimEntity {
         int currentDataNodeId = data[0];
         int currentDatacenterId = data[1];
 
-        getDataNodeList().add(currentDataNodeId);
-        getMapDataNodeToDatacenter().put(currentDataNodeId, currentDatacenterId);
+        Log.printLine(getName() + ": Received DataNode VM of ID " + currentDataNodeId + ", in Datacenter " + currentDatacenterId);
+
+        this.dataNodeList.add(currentDataNodeId);
+        Log.printLine("Top element della datanode list in NameNode: " + getDataNodeList().get(0));
+        this.mapDataNodeToDatacenter.put(currentDataNodeId, currentDatacenterId);
 
     }
 
@@ -118,12 +124,12 @@ public class NameNode extends SimEntity {
     // l'evento ev è un array che contiene: String nome del file, String: preferred number of replicas, String: blocksize
     protected void processWriteFile(SimEvent ev){
 
-        String[] data = (String[]) ev.getData();
+        List<String> data = (List<String>) ev.getData();
 
-        String fileName = data[0];
-        int replicasNumber = Integer.parseInt(data[1]);
-        int blockSize = Integer.parseInt(data[2]);  // blocksize in MB
-        int clientBrokerId = Integer.parseInt(data[3]);  // ID della client VM che invia
+        String fileName = data.get(0);
+        int replicasNumber = Integer.parseInt(data.get(1));
+        int blockSize = Integer.parseInt(data.get(2));  // blocksize in MB
+        int clientBrokerId = Integer.parseInt(data.get(3));  // ID della client VM che invia
 
         // nel caso sia undefined, allora il numero di replicas è quello standard del NameNode
         if (replicasNumber == 0) {
@@ -139,11 +145,12 @@ public class NameNode extends SimEntity {
         // queste saranno le vms in cui il blocco c'è già, però c'è abbastanza spazio per scriverne un altro
         List<Integer> secondaryVms = new ArrayList<Integer>();
 
-        for (int iterDataNode : getMapDataNodeToBlocks().keySet()){
+        for (Integer iterDataNode : getMapDataNodeToBlocks().keySet()){
             secondaryVms.add(iterDataNode);
             if (!getMapDataNodeToBlocks().get(iterDataNode).contains(fileName)){
                 primaryVms.add(iterDataNode);
                 secondaryVms.remove(iterDataNode);
+                secondaryVms.add(iterDataNode);     // this data node can still be secondary, but it will be moved at the end of the queue
             }
         }
 
@@ -169,6 +176,14 @@ public class NameNode extends SimEntity {
 
         }
 
+        Log.printLine("The primary vms are: ");
+        for (Integer t : primaryVms)
+            Log.print(t + ", ");
+        Log.printLine();
+        Log.printLine("The secondary vms are: ");
+        for (Integer t : secondaryVms)
+            Log.print(t + ", ");
+
         // assegniamo da scrivere il file in tot. DataNodes, quante sono le replicas, in cui il file non c'è già
         // bisogna controllare anche che nel DataNode ci sia enough space per assegnare il file (serve il blocksize lol)
 
@@ -184,6 +199,10 @@ public class NameNode extends SimEntity {
             destinationIds.addAll(primaryVms);  // aggiungiamo tutte le primary vms che abbiamo
 
             for (int i = 0; i < (replicasNumber - primaryVms.size()); i++){
+                if (secondaryVms.isEmpty()){
+                    Log.printLine("There are no suitable DataNodes");
+                    return;
+                }
                 destinationIds.add(secondaryVms.get(i));    // usiamo come rimanenti repliche quelle da secondary vms, dove il blocco c'è già, ma almeno c'è spazio
             }
         }

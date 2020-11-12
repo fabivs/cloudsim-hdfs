@@ -11,6 +11,7 @@ package org.cloudbus.cloudsim.examples.hdfs;
 
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
+import org.cloudbus.cloudsim.core.CloudSimTags;
 import org.cloudbus.cloudsim.hdfs.*;
 
 import java.util.ArrayList;
@@ -43,7 +44,7 @@ public class HdfsExample0 {
 		try {
 
 			// First step: Initialize CloudSim
-			int num_user = 1;   // number of cloud users
+			int num_user = 4;   // number of cloud users
 			Calendar calendar = Calendar.getInstance();
 			boolean trace_flag = false;  // means trace events
 
@@ -75,16 +76,27 @@ public class HdfsExample0 {
 			datacenterList =  new ArrayList<HdfsDatacenter>();
 
 			// Client datacenter
-			HdfsDatacenter datacenter0 = createDatacenter("Datacenter_0", HDFS_CLIENT, datacenterParameters);
-			// Data Nodes datacenter
-			HdfsDatacenter datacenter1 = createDatacenter("Datacenter_1", HDFS_DN, datacenterParameters);
+			HdfsDatacenter datacenter0 = createDatacenter("Datacenter_0", datacenterParameters);
+			// Data Nodes datacenter (the starting Cloudlet ID needs to be different)
+			HdfsDatacenter datacenter1 = createDatacenterDataNodes("Datacenter_1", 0, datacenterParameters);
 
 
-			// Third step: Create a Broker (ne serve solo uno perchè abbiamo un solo Client)
+			// Third step: Create Brokers
 
+			// CLIENT (Main) BROKER
 			HdfsDatacenterBroker broker = createBroker();
 			int brokerId = broker.getId();
 
+			// one REPLICATION BROKER for each datacenter for data nodes (ognuno con un nuovo cloudlet base id)
+			HdfsReplicationBroker replicationBroker = createBroker(100);
+			datacenter1.setReplicationBrokerId(replicationBroker.getId());
+
+			// creo il NameNode
+			int blockSize = 10000;
+			int defaultReplicas = 2;
+			NameNode nameNode = new NameNode("NameNode1", blockSize, defaultReplicas);
+
+			broker.setNameNodeId(nameNode.getId());
 
 			// Fourth step: Create VMs
 
@@ -109,6 +121,16 @@ public class HdfsExample0 {
 			//submit vm list to the broker
 			broker.submitVmList(vmList);
 
+			// submit the Data nodes vms to the replication broker
+			List<HdfsVm> dnList = new ArrayList<HdfsVm>();
+
+			// only the Data Nodes Vms will be added to the list that is submitted to the replication broker
+			for (HdfsVm iterVm : vmList)
+				if (iterVm.getHdfsType() == HDFS_DN)
+					dnList.add(iterVm);
+
+			replicationBroker.submitVmList(dnList);
+
 
 			// Fifth step: Create Cloudlets
 
@@ -126,7 +148,6 @@ public class HdfsExample0 {
 
 			// HDFS BLOCKS PARAMETERS
 			int blockCount = 2;		// block count deve sempre corrispondere al numero di cloudlets!
-			int blockSize = 10000;
 
 			List<File> blockList = createBlockList(blockCount, blockSize);
 
@@ -152,7 +173,7 @@ public class HdfsExample0 {
 
 			// set the destination vm id for the cloudlets
 			// queste saranno le VM di destinazione in cui vanno scritti i blocchi HDFS
-			// TODO: ovviamente questo ora non funziona più, che è una lista di vms
+			// TODO: ovviamente questo ora non dovrebbe più servire, se la vede il NameNode
 			//cloudlet1.setDestVmIds(vmList.get(1).getId());	// vm #2
 			//cloudlet2.setDestVmIds(vmList.get(2).getId());	// vm #3
 
@@ -169,6 +190,7 @@ public class HdfsExample0 {
 			broker.bindCloudletToVm(cloudlet2.getCloudletId(),vmList.get(0).getId());
 
 
+			/*
 			// NETWORK TOPOLOGY
 
 			//Sixth step: configure network
@@ -186,6 +208,7 @@ public class HdfsExample0 {
 
 			briteNode=3;
 			NetworkTopology.mapNode(datacenter1.getId(),briteNode);
+			*/
 
 
 			// Eighth step: Starts the simulation
@@ -220,7 +243,7 @@ public class HdfsExample0 {
 	 * @return the datacenter object
 	 * @throws ParameterException
 	 */
-	private static HdfsDatacenter createDatacenter(String name, int hdfsType, int[] requiredValues) throws ParameterException{
+	private static HdfsDatacenter createDatacenter(String name, int[] requiredValues) throws ParameterException{
 
 		//List<HdfsHost> hostList;
 		//List<Pe> peList;
@@ -262,7 +285,58 @@ public class HdfsExample0 {
 		HdfsDatacenter datacenter = null;
 		try {
 			datacenter = new HdfsDatacenter(name, characteristics, new VmAllocationPolicySimple(hostList), storageList, 0);
-			datacenter.setHdfsType(hdfsType);
+			datacenterList.add(datacenter);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return datacenter;
+
+	}
+
+	private static HdfsDatacenter createDatacenterDataNodes(String name, int replicationBrokerId, int[] requiredValues) throws ParameterException{
+
+		//List<HdfsHost> hostList;
+		//List<Pe> peList;
+
+		// values for Pes
+		int mips = requiredValues[0];
+		int pesNum = requiredValues[1];
+
+		// values for Hosts
+		int hostNum = requiredValues[2];
+		int hostRam = requiredValues[3];
+		int hostStorageSize = requiredValues[4];
+		int hostBw = requiredValues[5];
+
+		// values for Storage
+		int hddNumber = requiredValues[6];
+		int hddSize = requiredValues[7];
+
+		// questo metodo, se tutto va bene, mi deve ritornare una lista di Hosts, con Id crescente, ognuno
+		// con la propria Pe list (ognuno deve avere una istanza diversa di Pe List)
+		List<HdfsHost> hostList = createHostList(hostNum, hostRam, hostStorageSize, hostBw, pesNum, mips);
+
+		// DatacenterCharacteristics
+		String arch = "x86";			// system architecture
+		String os = "Linux";          	// operating system
+		String vmm = "Xen";				// virtual machine manager
+		double time_zone = 10.0;        // time zone this resource located
+		double cost = 3.0;              // the cost of using processing in this resource
+		double costPerMem = 0.05;		// the cost of using memory in this resource
+		double costPerStorage = 0.001;	// the cost of using storage in this resource
+		double costPerBw = 0.0;			// the cost of using bw in this resource
+
+		LinkedList<Storage> storageList = createStorageList(hddNumber, hddSize);
+
+		DatacenterCharacteristics characteristics = new DatacenterCharacteristics(
+				arch, os, vmm, hostList, time_zone, cost, costPerMem, costPerStorage, costPerBw);
+
+		// create and return the Datacenter object
+		HdfsDatacenter datacenter = null;
+		try {
+			datacenter = new HdfsDatacenter(name, replicationBrokerId, characteristics, new VmAllocationPolicySimple(hostList), storageList, 0);
 			datacenterList.add(datacenter);
 
 		} catch (Exception e) {
@@ -280,6 +354,18 @@ public class HdfsExample0 {
 		HdfsDatacenterBroker broker = null;
 		try {
 			broker = new HdfsDatacenterBroker("Broker");
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+		return broker;
+	}
+
+	private static HdfsReplicationBroker createBroker(int cloudletBaseId){
+
+		HdfsReplicationBroker broker = null;
+		try {
+			broker = new HdfsReplicationBroker("ReplicationBroker", cloudletBaseId);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
