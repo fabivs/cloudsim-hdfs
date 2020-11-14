@@ -100,6 +100,8 @@ public class NameNode extends SimEntity {
 
 
         this.clientList.add(currentClientId);
+        //for (Integer i : getClientList())
+        //    Log.printLine("Lista di Clients in NameNode: " + i);
         // aggiunge alla mappa il client id e il corrispondente broker id, necessario per rispedire indietro gli eventi
         this.mapClientToBroker.put(currentClientId, currentBrokerId);
     }
@@ -114,8 +116,11 @@ public class NameNode extends SimEntity {
         Log.printLine(getName() + ": Received DataNode VM of ID " + currentDataNodeId + ", in Datacenter " + currentDatacenterId);
 
         this.dataNodeList.add(currentDataNodeId);
-        Log.printLine("Top element della datanode list in NameNode: " + getDataNodeList().get(0));
+        //for (Integer i : getDataNodeList())
+        //    Log.printLine("Lista di DataNodes in NameNode: " + i);
         this.mapDataNodeToDatacenter.put(currentDataNodeId, currentDatacenterId);
+        //Log.printLine("=== TEST: la mappa di DNs e Datacenters " + getMapDataNodeToDatacenter());
+
 
     }
 
@@ -131,6 +136,8 @@ public class NameNode extends SimEntity {
         int blockSize = Integer.parseInt(data.get(2));  // blocksize in MB
         int clientBrokerId = Integer.parseInt(data.get(3));  // ID della client VM che invia
 
+        Log.printLine("NameNode ha ricevuto una richiesta di scrittura, nome del file: " + fileName + ", repliche: " + replicasNumber + ", block size: " + blockSize + ", da parte del client: " + clientBrokerId);
+
         // nel caso sia undefined, allora il numero di replicas è quello standard del NameNode
         if (replicasNumber == 0) {
             replicasNumber = defaultReplicas;
@@ -145,12 +152,24 @@ public class NameNode extends SimEntity {
         // queste saranno le vms in cui il blocco c'è già, però c'è abbastanza spazio per scriverne un altro
         List<Integer> secondaryVms = new ArrayList<Integer>();
 
-        for (Integer iterDataNode : getMapDataNodeToBlocks().keySet()){
+        // DOBBIAMO FARE QUESTO: IL DATANODE NON PUÒ GIÀ CONTENERE IL BLOCCO, SE LO CONTIENE GIÀ È UN RIFIUTO SECCO.
+        // DOPODICHÈ BISOGNA CALCOLARE LA DIFFERENZA MAX TRA QUANTO SONO RIEMPITI IN % TUTTI I DNS COME VUOLE HDFS, SECONDO IL TRESHOLD (FACCIO 10%)
+        // E QUINDI SCRIVERE CIASCUN BLOCCO NEL NODO CHE FA IN MODO CHE QUESTA TRESHOLD SI MANTENGA!! (SECONDO ME CI STA BENE FARE UN METODO CHE NE SCRIVE UNO ALLA VOLTA,
+        // E LO CHIAMO IN UN CICLO TANTE VOLTE QUANTE SONO LE REPLICHE NECESSARIE
+
+        /*
+        // NON VA BENE NIENTE DI QUESTO!!!
+        for (Integer iterDataNode : getDataNodeList()){
             secondaryVms.add(iterDataNode);
-            if (!getMapDataNodeToBlocks().get(iterDataNode).contains(fileName)){
+            if (!getMapDataNodeToBlocks().containsKey(iterDataNode)){   // se il DN non è presente nella hash map, vuol dire che il nodo è vuoto
                 primaryVms.add(iterDataNode);
                 secondaryVms.remove(iterDataNode);
-                secondaryVms.add(iterDataNode);     // this data node can still be secondary, but it will be moved at the end of the queue
+            } else {
+                if (!getMapDataNodeToBlocks().get(iterDataNode).contains(fileName)){    // se il DN è presente nella hash map, ma non contiene il file in questione
+                    primaryVms.add(iterDataNode);
+                    secondaryVms.remove(iterDataNode);
+                    secondaryVms.add(iterDataNode);     // this data node can still be secondary, but it will be moved at the end of the queue
+                }
             }
         }
 
@@ -193,6 +212,7 @@ public class NameNode extends SimEntity {
             }
         }
 
+        // NOTA DI GRIBAUDO: IN UN CASO REALE QUESTO NON SUCCEDE MAI, I NODI SONO SEMPRE TANTISSIMI, E LE REPLICHE IN GENERE SOLO 3, QUINDI QUESTO CHECK È ORRIBILE, USELESS
         // se le vms libere sono meno delle repliche da scrivere: usiamo le vms che abbiamo prima,
         // dopodichè usiamo vms in cui c'è almeno abbastanza spazio per scrivere il blocco di nuovo
         if (primaryVms.size() < replicasNumber){
@@ -206,6 +226,7 @@ public class NameNode extends SimEntity {
                 destinationIds.add(secondaryVms.get(i));    // usiamo come rimanenti repliche quelle da secondary vms, dove il blocco c'è già, ma almeno c'è spazio
             }
         }
+        // ^^ FINO A QUI, NON VA BENE NIENTE */
 
         // aggiungiamo nella hashmap il blocco nei corrispondenti data nodes in cui lo abbiamo allocato
         for (Integer i : destinationIds){
