@@ -3,9 +3,11 @@ package org.cloudbus.cloudsim.hdfs;
 import org.cloudbus.cloudsim.Cloudlet;
 import org.cloudbus.cloudsim.DatacenterCharacteristics;
 import org.cloudbus.cloudsim.Log;
+import org.cloudbus.cloudsim.Vm;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.core.CloudSimTags;
 import org.cloudbus.cloudsim.core.SimEvent;
+import org.cloudbus.cloudsim.lists.VmList;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -65,12 +67,66 @@ public class HdfsReplicationBroker extends HdfsDatacenterBroker {
             case CloudSimTags.HDFS_NAMENODE_RETURN_DN_LIST:
                 processSendDataCloudlet(ev);
                 break;
+            // Il Replication Broker ha bisogno di conoscere le VMs e la mappa Vms to Datanodes, questa info gliela manda il broker principale
+            case CloudSimTags.HDFS_REP_BROKER_ADD_DN:
+                processDataNodeInformation(ev);
+                break;
 
             // other unknown tags are processed by this method
             default:
                 processOtherEvent(ev);
                 break;
         }
+    }
+
+    protected void processDataNodeInformation(SimEvent ev){
+        int[] data = (int[]) ev.getData();
+        int currentDataNodeId = data[0];
+        int currentDatacenterId = data[1];
+        int currentRackid = data[2];    // unused
+        int currentStorageCapacity = data[3];   // unused
+
+        getVmsToDatacentersMap().put(currentDataNodeId, currentDatacenterId);
+        getVmsCreatedList().add(VmList.getById(getVmList(), currentDataNodeId));
+    }
+
+    @Override
+    protected void submitDNCloudlets() {
+        int vmIndex = 0;
+        List<Cloudlet> successfullySubmitted = new ArrayList<Cloudlet>();
+        for (Cloudlet cloudlet : getCloudletList()) {
+            Vm vm;
+            // if user didn't bind this cloudlet and it has not been executed yet
+            if (cloudlet.getVmId() == -1) {
+                vm = getVmsCreatedList().get(vmIndex);
+            } else { // submit to the specific vm
+                vm = VmList.getById(getVmsCreatedList(), cloudlet.getVmId());
+                if (vm == null) { // vm was not created
+                    if(!Log.isDisabled()) {
+                        Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Postponing execution of Data Cloudlet ",
+                                cloudlet.getCloudletId(), ": bound VM not available");
+                    }
+                    continue;
+                }
+            }
+
+            if (!Log.isDisabled()) {
+                Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Sending Data Cloudlet ",
+                        cloudlet.getCloudletId(), " to VM #", vm.getId());
+            }
+
+            // il metodo dovrebbe automaticamente trovare il Datacenter in cui si trova la VM del DN senza problemi
+            sendNow(getVmsToDatacentersMap().get(vm.getId()), CloudSimTags.HDFS_DN_CLOUDLET_SUBMIT, cloudlet);
+
+            cloudletsSubmitted++;
+            currentCloudletMaxId = Math.max(cloudlet.getCloudletId(), currentCloudletMaxId);
+            vmIndex = (vmIndex + 1) % getVmsCreatedList().size();
+            getCloudletSubmittedList().add(cloudlet);
+            successfullySubmitted.add(cloudlet);
+        }
+
+        // remove submitted cloudlets from waiting list
+        getCloudletList().removeAll(successfullySubmitted);
     }
 
     @Override
@@ -123,22 +179,8 @@ public class HdfsReplicationBroker extends HdfsDatacenterBroker {
     }
 
     @Override
-    protected void processResourceCharacteristics(SimEvent ev) {
-
-    }
-
-    @Override
-    protected void processResourceCharacteristicsRequest(SimEvent ev) {
-
-    }
-
-    @Override
-    protected void processVmCreate(SimEvent ev) {
-
-    }
-
-    @Override
-    protected void createVmsInDatacenter(int datacenterId) {
-
+    public void submitVmList(List<? extends Vm> list) {
+        getVmList().addAll(list);
+        setVmsCreatedList(list);
     }
 }

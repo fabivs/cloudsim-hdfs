@@ -442,7 +442,7 @@ public class HdfsDatacenter extends Datacenter {
             int vmId = cl.getVmId();
 
             // il tempo necessario per leggere i requiredFiles dal disco
-            double fileTransferTime = writeAndPredictTime(cl.getSourceVmId(), cl.getBlockSize());
+            double fileTransferTime = writeAndPredictTime(cl.getRequiredFiles().get(0), cl.getVmId(), cl.getBlockSize());
 
             // REPLICATION:
             // il tempo necessario per leggere i requiredFiles dal disco
@@ -496,20 +496,20 @@ public class HdfsDatacenter extends Datacenter {
      * Mi serve solo per un HDFS block, però per ora lascio la lista di files, penso userò un singolo file che fa da
      * blocco
      */
-    protected double writeAndPredictTime(int sourceVmId, int blockSize) {
+    protected double writeAndPredictTime(String fileName, int sourceVmId, int blockSize) {
 
         double time = 0.0;
 
         // increasing file name
         // turns out to be useful for replication, because the method addFile() won't add a file with the same name
         // in the same drive, which is exactly what we want (just make sure replicas have the same fileName as the original)
-        String fileName = "HdfsBlock_" + fileNameCounter;
+        String theName = fileName;
         fileNameCounter++;
 
         // create a new instance of File
         File hdfsBlock = null;
         try {
-            hdfsBlock = new File(fileName, blockSize);
+            hdfsBlock = new File(theName, blockSize);
         } catch (ParameterException e) {
             Log.printLine(getName() + ".writeAndPredictTime(): " + "File creation error (invalid name or size).");
             e.printStackTrace();
@@ -526,15 +526,22 @@ public class HdfsDatacenter extends Datacenter {
         // now we add the file to the storage obj inside this Datacenter, and we estimate the required time
         // (this is all done automatically by the method addFile())
 
-        Storage tempStorage = null;
+        HarddriveStorage tempStorage = null;
+
+        HdfsHost writingHost = null;
+        for (Host tempHost : getHostList()){
+            if (tempHost.getVmList().get(0).getId() == sourceVmId)
+                writingHost = (HdfsHost) tempHost;  // troviamo qual'è l'host in cui si trova la VM che vuole scrivere il blocco
+        }
 
         // cycle through all the available drives in the Datacenter
         for (int i = 0; i < getStorageList().size(); i++) {
 
-            // get the drive i
-            tempStorage = getStorageList().get(i);
-            // store the file and get the estimated time
-            time += tempStorage.addFile(hdfsBlock);
+            tempStorage = (HarddriveStorage) getStorageList().get(i);
+            if (tempStorage.getHostId() == writingHost.getId()){
+                // store the file and get the estimated time
+                time += tempStorage.addFile(hdfsBlock);
+            }
 
             // time is only equal 0.0 if the addFile failed for some reason, so if the addFile was successful, we break
             // NOTE: if a file with the same name is already present, the addFile will fail and return 0.0

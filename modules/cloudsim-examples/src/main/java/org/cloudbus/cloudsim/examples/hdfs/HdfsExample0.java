@@ -76,11 +76,14 @@ public class HdfsExample0 {
 			int[] datacenterParameters = new int[]{datacenterPeMips, datacenterPeCount, datacenterHostCount, datacenterHostRam,
 					datacenterHostStorage, datacenterHostBw, datacenterDiskCount, datacenterDiskSize, datacenterHostsPerRack, datacenterBaseRackId};
 
+			int[] datacenterParametersClient = new int[]{datacenterPeMips, datacenterPeCount, datacenterHostCount-8, datacenterHostRam,
+					datacenterHostStorage, datacenterHostBw, datacenterDiskCount-8, datacenterDiskSize, datacenterHostsPerRack, datacenterBaseRackId};
+
 			// metto i Datacenters in una list per convenience, in particolare per il metodo printStorageList
 			datacenterList =  new ArrayList<HdfsDatacenter>();
 
 			// Client datacenter
-			HdfsDatacenter datacenter0 = createDatacenter("Datacenter_0", datacenterParameters);
+			HdfsDatacenter datacenter0 = createDatacenter("Datacenter_0", datacenterParametersClient);
 			// Data Nodes datacenter (the starting Cloudlet ID needs to be different)
 			HdfsDatacenter datacenter1 = createDatacenterDataNodes("Datacenter_1", 0, datacenterParameters);
 
@@ -94,6 +97,7 @@ public class HdfsExample0 {
 			// one REPLICATION BROKER for each datacenter for data nodes (ognuno con un nuovo cloudlet base id)
 			HdfsReplicationBroker replicationBroker = createBroker(100);
 			datacenter1.setReplicationBrokerId(replicationBroker.getId());
+			broker.getReplicationBrokersId().add(replicationBroker.getId());
 
 			// creo il NameNode
 			int blockSize = 10000;
@@ -105,7 +109,7 @@ public class HdfsExample0 {
 			// Fourth step: Create VMs
 
 			// VM PARAMETERS
-			int vmCount = 9;		// number of vms to be created
+			int vmCount = 10;		// number of vms to be created
 			int vmMips = 250;		// mips performance of a VM
 			int vmPesNumber = 1;	// number of PEs
 			int vmRam = 2048;		// vm memory (MB)
@@ -151,7 +155,7 @@ public class HdfsExample0 {
 			// I'll make two blocks to transfer from vm1 to vm2 and from vm1 to vm3
 
 			// HDFS BLOCKS PARAMETERS
-			int blockCount = 2;		// block count deve sempre corrispondere al numero di cloudlets!
+			int blockCount = 3;		// block count deve sempre corrispondere al numero di cloudlets!
 
 			List<File> blockList = createBlockList(blockCount, blockSize);
 
@@ -165,6 +169,9 @@ public class HdfsExample0 {
 			List<String> blockList2 = new ArrayList<String>();
 			blockList2.add(blockList.get(1).getName());
 
+			List<String> blockList3 = new ArrayList<String>();
+			blockList3.add(blockList.get(2).getName());
+
 			// Finally we can create the cloudlets
 			HdfsCloudlet cloudlet1 = new HdfsCloudlet(id, length, pesNumber, fileSize, outputSize, utilizationModel,
 					utilizationModel, utilizationModel, blockList1, blockSize);
@@ -175,6 +182,11 @@ public class HdfsExample0 {
 					utilizationModel, utilizationModel, blockList2, blockSize);
 			cloudlet2.setUserId(brokerId);
 
+			id++;
+			HdfsCloudlet cloudlet3 = new HdfsCloudlet(id, length, pesNumber, fileSize, outputSize, utilizationModel,
+					utilizationModel, utilizationModel, blockList3, blockSize);
+			cloudlet3.setUserId(brokerId);
+
 			// set the destination vm id for the cloudlets
 			// queste saranno le VM di destinazione in cui vanno scritti i blocchi HDFS
 			// TODO: ovviamente questo ora non dovrebbe più servire, se la vede il NameNode
@@ -184,6 +196,7 @@ public class HdfsExample0 {
 			// add the cloudlets to the list
 			cloudletList.add(cloudlet1);
 			cloudletList.add(cloudlet2);
+			cloudletList.add(cloudlet3);
 
 			// submit cloudlet list to the broker
 			broker.submitCloudletList(cloudletList);

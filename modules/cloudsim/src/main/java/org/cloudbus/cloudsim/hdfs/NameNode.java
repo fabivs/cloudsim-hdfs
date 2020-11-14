@@ -217,14 +217,14 @@ public class NameNode extends SimEntity {
         // ora mancano gli altri nodi che vanno in rack remoti
 
         // per iniziare sono accettabili tutti i racks tranne quello della prima destinazione
-        List<Integer> acceptableRacks = new ArrayList<Integer>(getMapDataNodeToRackId().values());
+        Set<Integer> acceptableRacks = new HashSet<Integer>(getMapDataNodeToRackId().values());
         acceptableRacks.remove(getMapDataNodeToRackId().get(firstNode));
 
         double currentMinRackUsage;
 
         // 2 nodi max per rack, fino a esaurimento repliche
         // scegliamo il rack cono meno overall usage e con almeno due nodi che fanno parte di quelli accettabili
-        for (int i = 0; i <= replicasNumber % 2; i++){
+        for (int i = 0; i <= (replicasNumber % 2); i++){
 
             int validNodesPerRack = 0;
             List<Integer> originalAcceptableRacks = new ArrayList<Integer>(acceptableRacks);

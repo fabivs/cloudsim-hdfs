@@ -304,6 +304,9 @@ public class CloudSimTags {
 	public static final int HDFS_NAMENODE_WRITE_FILE = BASE + 59;
 	public static final int HDFS_NAMENODE_RETURN_DN_LIST = BASE + 60;
 
+	// Replication Broker
+	public static final int HDFS_REP_BROKER_ADD_DN = BASE + 61;
+
 	/** Private Constructor. */
 	private CloudSimTags() {
 		throw new UnsupportedOperationException("CloudSimTags cannot be instantiated");

@@ -22,6 +22,8 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
 
     protected HdfsCloudlet stagedCloudlet;
 
+    protected List<Integer> replicationBrokersId;
+
     /**
      * Created a new DatacenterBroker object. Remember to set the name node as well after creation!
      *
@@ -33,6 +35,7 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
     public HdfsDatacenterBroker(String name) throws Exception {
         super(name);
         currentCloudletMaxId = 0;
+        setReplicationBrokersId(new ArrayList<Integer>());
     }
 
     // COSTRUTTORE PER I REPLICATION BROKERS, settare il cloudlet max ID a un numero più alto, ad esempio +100
@@ -155,7 +158,7 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
 
         HdfsCloudlet originalCloudlet = (HdfsCloudlet) ev.getData();
 
-        Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": ReplicationCloudlet ", originalCloudlet.getCloudletId(),
+         Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": ReplicationCloudlet ", originalCloudlet.getCloudletId(),
                 ": the block has been read, sending it to the Data Node...");
 
         // non molto elegante, ma dovrebbe funzionare lol, da qualche parte sto metodo lo devo prendere
@@ -229,7 +232,12 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
                 HdfsHost tempHost = (HdfsHost) tempVm.getHost();
                 // invio al NameNode 4 valori: Id del nodo, Id del datacenter, Id del rack, capacità di storage
                 tempData = new int[]{tempVm.getId(), datacenterId, tempHost.getRackId(), (int) tempHost.getProperStorage().getCapacity()};
+                // send the information about the DataNodes to the NameNode
                 sendNow(nameNodeId, CloudSimTags.HDFS_NAMENODE_ADD_DN, tempData);
+                // send the information about the DataNodes to the Replication Brokers
+                for (Integer repBrokerId : replicationBrokersId){
+                    sendNow(repBrokerId, CloudSimTags.HDFS_REP_BROKER_ADD_DN, tempData);
+                }
             }
 
         } else {
@@ -336,9 +344,6 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
                         cloudlet.getCloudletId(), " to VM #", vm.getId());
             }
 
-            // non è ridondante questo?
-            cloudlet.setVmId(vm.getId());
-
             // il metodo dovrebbe automaticamente trovare il Datacenter in cui si trova la VM del DN senza problemi
             sendNow(getVmsToDatacentersMap().get(vm.getId()), CloudSimTags.HDFS_DN_CLOUDLET_SUBMIT, cloudlet);
 
@@ -359,5 +364,13 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
 
     public void setNameNodeId(int nameNodeId) {
         this.nameNodeId = nameNodeId;
+    }
+
+    public List<Integer> getReplicationBrokersId() {
+        return replicationBrokersId;
+    }
+
+    public void setReplicationBrokersId(List<Integer> replicationBrokersId) {
+        this.replicationBrokersId = replicationBrokersId;
     }
 }

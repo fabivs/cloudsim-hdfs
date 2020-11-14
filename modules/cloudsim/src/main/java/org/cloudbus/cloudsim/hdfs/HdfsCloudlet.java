@@ -80,6 +80,9 @@ public class HdfsCloudlet extends Cloudlet {
         int userId = cl.getUserId();
         newCl.setUserId(userId);
 
+        // set the destination vms ids
+        newCl.setDestVmIds(cl.getDestVmIds());
+
         return newCl;
     }
 
