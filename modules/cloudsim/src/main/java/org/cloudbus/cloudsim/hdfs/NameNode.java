@@ -29,6 +29,18 @@ public class NameNode extends SimEntity {
     // maps every DataNode (vm) ID with the list of blocks it contains as filenames
     protected Map<Integer, List<String>> mapDataNodeToBlocks;
 
+    // maps every DataNode (vm) ID with the associated Rack ID in its own Datacenter
+    protected Map<Integer, Integer> mapDataNodeToRackId;
+
+    // maps every DataNode (vm) ID con la max storage capacity che ha
+    protected Map<Integer, Integer> mapDataNodeToCapacity;
+
+    // maps every node with its filling %
+    protected Map<Integer, Double> mapDataNodeToUsage;
+
+    // maps every rack with its filling %
+    protected Map<Integer, Double> mapRackToUsage;
+
     // the default number of replicas per block
     protected int defaultReplicas;
 
@@ -49,6 +61,9 @@ public class NameNode extends SimEntity {
         setDataNodeList(new ArrayList<Integer>());
         setMapDataNodeToDatacenter(new HashMap<Integer, Integer>());
         setMapDataNodeToBlocks(new HashMap<Integer, List<String>>());
+        setMapDataNodeToRackId(new HashMap<Integer, Integer>());
+        setMapDataNodeToCapacity(new HashMap<Integer, Integer>());
+        setMapDataNodeToUsage(new HashMap<Integer, Double>());
 
         // setDefaultBlockSize(defaultBlockSize);
         setDefaultReplicas(defaultReplicas);
@@ -112,16 +127,31 @@ public class NameNode extends SimEntity {
         int[] data = (int[]) ev.getData();
         int currentDataNodeId = data[0];
         int currentDatacenterId = data[1];
+        int currentRackid = data[2];
+        int currentStorageCapacity = data[3];
 
         Log.printLine(getName() + ": Received DataNode VM of ID " + currentDataNodeId + ", in Datacenter " + currentDatacenterId);
 
+        // Aggiungiamo il nodo alla lista di DataNodes
         this.dataNodeList.add(currentDataNodeId);
         //for (Integer i : getDataNodeList())
         //    Log.printLine("Lista di DataNodes in NameNode: " + i);
+
+        // Mappiamo il nodo al data center
         this.mapDataNodeToDatacenter.put(currentDataNodeId, currentDatacenterId);
         //Log.printLine("=== TEST: la mappa di DNs e Datacenters " + getMapDataNodeToDatacenter());
 
+        // Mappiamo il nodo al rack
+        this.mapDataNodeToRackId.put(currentDataNodeId, currentRackid);
 
+        // Mappiamo il nodo alla sua capacità massima
+        this.mapDataNodeToCapacity.put(currentDataNodeId, currentStorageCapacity);
+
+        // Settiamo la % di utilizzo del nodo iniziale, che è 0%
+        this.mapDataNodeToUsage.put(currentDataNodeId, 0.0);
+
+        // Se il rack non è già presente setto il suo utilizzo a 0% ma NON lo faccio più, perchè mi servirebbe anche un'altra mappa che mappa
+        // ogni rack a un datacenter, sennò ovviamente i rack id si sovrapporrebbero, lasciamo stare, me lo trovo a mano quando mi serve questo valore
     }
 
     // writing a new File (Block) to the HDFS cluster
@@ -146,95 +176,151 @@ public class NameNode extends SimEntity {
         // il risultato finale da ritornare al broker
         List<Integer> destinationIds = new ArrayList<Integer>();
 
-        // dobbiamo controllare in quali DataNode VMs il file è già presente
+        List<Integer> acceptableDestinations = new ArrayList<Integer>();
 
-        List<Integer> primaryVms = new ArrayList<Integer>();
-        // queste saranno le vms in cui il blocco c'è già, però c'è abbastanza spazio per scriverne un altro
-        List<Integer> secondaryVms = new ArrayList<Integer>();
+        // IL DATANODE NON PUÒ GIÀ CONTENERE IL BLOCCO, SE LO CONTIENE GIÀ È UN RIFIUTO SECCO.
+        // IL PRIMO BLOCCO LO SCRIVIAMO NEL NODO CON MINORE % DI RIEMPIMENTO (GIUSTIFICAZIONE: TUTTI I NODI SONO EQUIDISTANTI DAI CLIENT)
+        // PER IL SECONDO BLOCCO: CONSIDERO TUTTI GLI ALTRI RACKS, SCELGO IL RACK CON MENO % DI RIEMPIMENTO
+        // ALL'INTERNO DI QUESTO RACK SCELGO I DUE NODI CON MENO % DI RIEMPIMENTO
 
-        // DOBBIAMO FARE QUESTO: IL DATANODE NON PUÒ GIÀ CONTENERE IL BLOCCO, SE LO CONTIENE GIÀ È UN RIFIUTO SECCO.
-        // DOPODICHÈ BISOGNA CALCOLARE LA DIFFERENZA MAX TRA QUANTO SONO RIEMPITI IN % TUTTI I DNS COME VUOLE HDFS, SECONDO IL TRESHOLD (FACCIO 10%)
-        // E QUINDI SCRIVERE CIASCUN BLOCCO NEL NODO CHE FA IN MODO CHE QUESTA TRESHOLD SI MANTENGA!! (SECONDO ME CI STA BENE FARE UN METODO CHE NE SCRIVE UNO ALLA VOLTA,
-        // E LO CHIAMO IN UN CICLO TANTE VOLTE QUANTE SONO LE REPLICHE NECESSARIE
-
-        /*
-        // NON VA BENE NIENTE DI QUESTO!!!
+        // iniziamo escludendo tutti i DataNodes che già contengono il blocco
         for (Integer iterDataNode : getDataNodeList()){
-            secondaryVms.add(iterDataNode);
-            if (!getMapDataNodeToBlocks().containsKey(iterDataNode)){   // se il DN non è presente nella hash map, vuol dire che il nodo è vuoto
-                primaryVms.add(iterDataNode);
-                secondaryVms.remove(iterDataNode);
-            } else {
-                if (!getMapDataNodeToBlocks().get(iterDataNode).contains(fileName)){    // se il DN è presente nella hash map, ma non contiene il file in questione
-                    primaryVms.add(iterDataNode);
-                    secondaryVms.remove(iterDataNode);
-                    secondaryVms.add(iterDataNode);     // this data node can still be secondary, but it will be moved at the end of the queue
-                }
+            if (!getMapDataNodeToBlocks().containsKey(iterDataNode)) {   // se il DN non è presente nella hash map, vuol dire che il nodo è vuoto
+                acceptableDestinations.add(iterDataNode);
+            } else if (!getMapDataNodeToBlocks().get(iterDataNode).contains(fileName)){
+                acceptableDestinations.add(iterDataNode);
             }
         }
 
-        // eliminiamo dalla lista di free vms quelle in cui non c'è abbastanza spazio per salvare il blocco
-        // nota: vado a controllare nell'host dove è allocata quella vm se c'è abbastanza storage space
+        if (acceptableDestinations.isEmpty()){
+            Log.print("No suitable nodes were found to write the block to!");
+            return;
+        }
 
-        for (Integer currentVm : primaryVms){
-            // get the datacenter corresponding to that vm
-            HdfsDatacenter currentDataCenter = (HdfsDatacenter) CloudSim.getEntity(getMapDataNodeToDatacenter().get(currentVm));
-            // search inside all hosts
-            for (Host iterHost : currentDataCenter.getHostList()){
-                // for each host, search inside the allocated vms in that host
-                for (Vm iterVm : iterHost.getVmList()){
-                    // when iterVm is the actual vm we are looking for, it means that this host contains that vm
-                    if (iterVm.getId() == currentVm){
-                        HdfsHost test = (HdfsHost) iterHost;
-                        if (test.getProperStorage().getAvailableSpace() < blockSize)
-                            primaryVms.remove(currentVm);
-                            secondaryVms.remove(currentVm);
+        // prendiamo il nodo tra quelli candidati in cui la % di utilizzo è minima (questo non è true HDFS)
+        // così abbiamo scelto la destination della prima replica
+        double minUsage = 999.9;
+        Integer firstNode = null;
+
+        for (Integer tempNode : acceptableDestinations){
+            if (getMapDataNodeToUsage().get(tempNode) < minUsage){
+                firstNode = tempNode;
+                minUsage = getMapDataNodeToUsage().get(tempNode);
+            }
+        }
+
+        // il nodo scelto lo aggiungo alla lista di risultati e lo rimuovo dalle destinations candidate
+        destinationIds.add(firstNode);
+        acceptableDestinations.remove(firstNode);
+        replicasNumber--;   // ho bisogno di sapere quante repliche restano da scrivere per il prossimo ciclo
+
+        // ora mancano gli altri nodi che vanno in rack remoti
+
+        // per iniziare sono accettabili tutti i racks tranne quello della prima destinazione
+        List<Integer> acceptableRacks = new ArrayList<Integer>(getMapDataNodeToRackId().values());
+        acceptableRacks.remove(getMapDataNodeToRackId().get(firstNode));
+
+        double currentMinRackUsage;
+
+        // 2 nodi max per rack, fino a esaurimento repliche
+        // scegliamo il rack cono meno overall usage e con almeno due nodi che fanno parte di quelli accettabili
+        for (int i = 0; i <= replicasNumber % 2; i++){
+
+            int validNodesPerRack = 0;
+            List<Integer> originalAcceptableRacks = new ArrayList<Integer>(acceptableRacks);
+
+            // prima di tutto tolgo da acceptableRacks i rack che non hanno almeno 2 nodi accettabili
+            for (Integer rack : originalAcceptableRacks){
+                for (Integer node : acceptableDestinations){
+                    if (getMapDataNodeToRackId().get(node).equals(rack)){
+                        validNodesPerRack++;
                     }
                 }
-            }
-
-        }
-
-        Log.printLine("The primary vms are: ");
-        for (Integer t : primaryVms)
-            Log.print(t + ", ");
-        Log.printLine();
-        Log.printLine("The secondary vms are: ");
-        for (Integer t : secondaryVms)
-            Log.print(t + ", ");
-
-        // assegniamo da scrivere il file in tot. DataNodes, quante sono le replicas, in cui il file non c'è già
-        // bisogna controllare anche che nel DataNode ci sia enough space per assegnare il file (serve il blocksize lol)
-
-        if (primaryVms.size() >= replicasNumber){
-            for (int i = 0; i < replicasNumber; i++){
-                destinationIds.add(primaryVms.get(i));
-            }
-        }
-
-        // NOTA DI GRIBAUDO: IN UN CASO REALE QUESTO NON SUCCEDE MAI, I NODI SONO SEMPRE TANTISSIMI, E LE REPLICHE IN GENERE SOLO 3, QUINDI QUESTO CHECK È ORRIBILE, USELESS
-        // se le vms libere sono meno delle repliche da scrivere: usiamo le vms che abbiamo prima,
-        // dopodichè usiamo vms in cui c'è almeno abbastanza spazio per scrivere il blocco di nuovo
-        if (primaryVms.size() < replicasNumber){
-            destinationIds.addAll(primaryVms);  // aggiungiamo tutte le primary vms che abbiamo
-
-            for (int i = 0; i < (replicasNumber - primaryVms.size()); i++){
-                if (secondaryVms.isEmpty()){
-                    Log.printLine("There are no suitable DataNodes");
-                    return;
+                if (validNodesPerRack < 2){
+                    acceptableRacks.remove(rack);
                 }
-                destinationIds.add(secondaryVms.get(i));    // usiamo come rimanenti repliche quelle da secondary vms, dove il blocco c'è già, ma almeno c'è spazio
             }
+
+            // ora cerco il rack tra quelli accettabili con usage ratio minore (questo non è true HDFS)
+            currentMinRackUsage = 999.9;
+            Integer chosenRack = null;
+
+            for (Integer rack : acceptableRacks){
+                if (findRackOverallUsage(rack) < currentMinRackUsage){
+                    chosenRack = rack;
+                    currentMinRackUsage = findRackOverallUsage(rack);
+                }
+            }
+
+            acceptableRacks.remove(chosenRack);
+
+            // all'interno di questo rack scelgo i due nodi con usage ratio minore
+
+            for (int k = 0; k < 2; k++){
+
+                double minNodeUsage = 999.9;
+                Integer chosenNode = null;
+
+                for (Integer tempNode : acceptableDestinations){
+                    if (getMapDataNodeToUsage().get(tempNode) < minNodeUsage && getMapDataNodeToRackId().get(tempNode).equals(chosenRack)){
+                        chosenNode = tempNode;
+                        minNodeUsage = getMapDataNodeToUsage().get(tempNode);
+                    }
+                }
+
+                // il nodo scelto lo aggiungo alla lista di risultati e lo rimuovo dalle destinations candidate
+                destinationIds.add(chosenNode);
+                acceptableDestinations.remove(chosenNode);
+            }
+
         }
-        // ^^ FINO A QUI, NON VA BENE NIENTE */
+
+        // devo cambiare le % di utilizzo dei nodi che ho settato!!
+        updateNodeUsage(destinationIds, blockSize);
 
         // aggiungiamo nella hashmap il blocco nei corrispondenti data nodes in cui lo abbiamo allocato
         for (Integer i : destinationIds){
-            getMapDataNodeToBlocks().get(i).add(fileName);
+            if (getMapDataNodeToBlocks().get(i) == null)
+                getMapDataNodeToBlocks().put(i, new ArrayList<String>(Collections.singleton(fileName)));
+            else
+                getMapDataNodeToBlocks().get(i).add(fileName);
         }
 
         // inviamo indietro al Broker che ce l'ha chiesto, la lista di VMs, che il broker poi infilerà in destVm del Cloudlet (va reimplementata destVM come lista)
         sendNow(clientBrokerId, CloudSimTags.HDFS_NAMENODE_RETURN_DN_LIST, destinationIds);
+    }
+
+    protected double findRackOverallUsage(Integer rackId){
+        double usage = 0.0;
+
+        int totalCapacity = 0;
+        double totalSpaceUsed = 0.0;
+
+        for (Integer i : getMapDataNodeToRackId().keySet()){
+            if (getMapDataNodeToRackId().get(i).equals(rackId)){
+                totalCapacity += getMapDataNodeToCapacity().get(i);
+                totalSpaceUsed += ( getMapDataNodeToUsage().get(i) * getMapDataNodeToCapacity().get(i));
+            }
+        }
+
+        return (totalSpaceUsed / totalCapacity);
+    }
+
+    protected void updateNodeUsage (List<Integer> nodesToUpdate, int blockSize){
+
+        double currentNodeUsage;
+        double currentNodeCapacity;
+        double currentNodeStorageAmount;
+        double currentNodeUpdatedUsage;
+
+        for (Integer currentNode : nodesToUpdate){
+            currentNodeUsage = getMapDataNodeToUsage().get(currentNode);
+            currentNodeCapacity = getMapDataNodeToCapacity().get(currentNode);
+            currentNodeStorageAmount = (currentNodeUsage * currentNodeCapacity);
+
+            currentNodeUpdatedUsage = (currentNodeStorageAmount + blockSize) / currentNodeCapacity;
+            this.mapDataNodeToUsage.put(currentNode, currentNodeUpdatedUsage);
+        }
     }
 
     @Override
@@ -315,6 +401,38 @@ public class NameNode extends SimEntity {
 
     public void setMapDataNodeToDatacenter(Map<Integer, Integer> mapDataNodeToDatacenter) {
         this.mapDataNodeToDatacenter = mapDataNodeToDatacenter;
+    }
+
+    public Map<Integer, Integer> getMapDataNodeToRackId() {
+        return mapDataNodeToRackId;
+    }
+
+    public void setMapDataNodeToRackId(Map<Integer, Integer> mapDataNodeToRackId) {
+        this.mapDataNodeToRackId = mapDataNodeToRackId;
+    }
+
+    public Map<Integer, Integer> getMapDataNodeToCapacity() {
+        return mapDataNodeToCapacity;
+    }
+
+    public void setMapDataNodeToCapacity(Map<Integer, Integer> mapDataNodeToCapacity) {
+        this.mapDataNodeToCapacity = mapDataNodeToCapacity;
+    }
+
+    public Map<Integer, Double> getMapDataNodeToUsage() {
+        return mapDataNodeToUsage;
+    }
+
+    public void setMapDataNodeToUsage(Map<Integer, Double> mapDataNodeToUsage) {
+        this.mapDataNodeToUsage = mapDataNodeToUsage;
+    }
+
+    public Map<Integer, Double> getMapRackToUsage() {
+        return mapRackToUsage;
+    }
+
+    public void setMapRackToUsage(Map<Integer, Double> mapRackToUsage) {
+        this.mapRackToUsage = mapRackToUsage;
     }
 
     /*

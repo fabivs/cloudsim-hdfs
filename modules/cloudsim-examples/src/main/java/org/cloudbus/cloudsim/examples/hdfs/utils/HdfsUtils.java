@@ -94,13 +94,16 @@ public final class HdfsUtils {
     }
 
     // questa linked list sarà poi la linked list di storage in DatacenterCharacteristics
-    public static LinkedList<Storage> createStorageList(int num, int storageSize) throws ParameterException {
+    // per ogni host creo un hard drive
+    public static LinkedList<Storage> createStorageList(List<HdfsHost> hostList, int storageSize) throws ParameterException {
 
         LinkedList<Storage> storageList = new LinkedList<Storage>();
 
-        for (int i = 0; i < num; i++){
-            String name = "HDD_" + String.valueOf(i);
-            storageList.add(new HarddriveStorage(name, storageSize));
+        for (int i = 0; i < hostList.size(); i++){
+            String name = "HDD_Host" + String.valueOf(hostList.get(i).getId());
+            HarddriveStorage tempStorage = new HarddriveStorage(name, storageSize, hostList.get(i).getId());
+            hostList.get(i).setProperStorage(tempStorage);
+            storageList.add(tempStorage);
         }
 
         return storageList;
@@ -108,7 +111,7 @@ public final class HdfsUtils {
 
     // crea la lista di Hosts in un Datacenter
     // TODO: Per ora il Vm scheduler è solo Time Shared e gli altri provisioners sono solo le versioni "Simple"
-    public static List<HdfsHost> createHostList(int num, int ram, int storageSize, int bw, int pesNum, int mips){
+    public static List<HdfsHost> createHostList(int num, int hostsPerRack, int baseRackId, int ram, int storageSize, int bw, int pesNum, int mips){
 
         // if it works as intended, ogni singolo host deve crearsi la propria istanza di una PeList
 
@@ -125,6 +128,22 @@ public final class HdfsUtils {
                     storageSize,
                     peList,
                     new VmSchedulerTimeShared(peList)));
+        }
+
+        // HOSTS PER RACK
+
+        int rackId = baseRackId;
+        int rackCounter = 0;
+
+        for (int i = 0; i < num; i++){
+
+            hostList.get(i).setRackId(rackId);
+            rackCounter++;
+
+            if (rackCounter == hostsPerRack){
+                rackId++;
+                rackCounter = 0;
+            }
         }
 
         return hostList;

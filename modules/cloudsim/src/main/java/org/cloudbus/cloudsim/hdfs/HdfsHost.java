@@ -16,6 +16,8 @@ import java.util.List;
 
 public class HdfsHost extends Host {
 
+    private int rackId;
+
     // TODO: this is, for now, completely useless
     // Il motivo: a un Host, ora come ora, non è assegnato uno o più specifici Hard Drives,
     // sono assegnati al Datacenter e ogni Host ha soltanto un numero che indica la capacità di storage
@@ -42,5 +44,13 @@ public class HdfsHost extends Host {
 
     public void setProperStorage(HarddriveStorage properStorage) {
         this.properStorage = properStorage;
+    }
+
+    public int getRackId() {
+        return rackId;
+    }
+
+    public void setRackId(int rackId) {
+        this.rackId = rackId;
     }
 }

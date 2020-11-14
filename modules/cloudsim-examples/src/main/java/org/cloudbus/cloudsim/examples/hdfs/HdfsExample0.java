@@ -59,18 +59,22 @@ public class HdfsExample0 {
 			int datacenterPeCount = 1;			// number of PEs per Host
 
 			// values for Hosts
-			int datacenterHostCount = 2;		// number of Hosts (in totale nel Datacenter)
+			int datacenterHostCount = 9;		// number of Hosts (in totale nel Datacenter)
 			int datacenterHostRam = 2048;		// amount of RAM for each Host
 			int datacenterHostStorage = 100000;	// amount of Storage assigned to each Host
 			int datacenterHostBw = 10000;		// amount of Bandwidth assigned to each Host
 
 			// values for Storage
-			int datacenterDiskCount = 2;		// number of Hard Drives in the Datacenter
+			int datacenterDiskCount = 9;		// number of Hard Drives in the Datacenter (non è più usato)
 			int datacenterDiskSize = 100000;	// capacity of each Hard Drive
+
+			// values for Racks
+			int datacenterHostsPerRack = 3;		// amount of Hosts in each Rack of the Datacenter
+			int datacenterBaseRackId = 0;
 
 			// create an array with all parameters stored inside
 			int[] datacenterParameters = new int[]{datacenterPeMips, datacenterPeCount, datacenterHostCount, datacenterHostRam,
-					datacenterHostStorage, datacenterHostBw, datacenterDiskCount, datacenterDiskSize};
+					datacenterHostStorage, datacenterHostBw, datacenterDiskCount, datacenterDiskSize, datacenterHostsPerRack, datacenterBaseRackId};
 
 			// metto i Datacenters in una list per convenience, in particolare per il metodo printStorageList
 			datacenterList =  new ArrayList<HdfsDatacenter>();
@@ -93,7 +97,7 @@ public class HdfsExample0 {
 
 			// creo il NameNode
 			int blockSize = 10000;
-			int defaultReplicas = 2;
+			int defaultReplicas = 3;
 			NameNode nameNode = new NameNode("NameNode1", blockSize, defaultReplicas);
 
 			broker.setNameNodeId(nameNode.getId());
@@ -101,7 +105,7 @@ public class HdfsExample0 {
 			// Fourth step: Create VMs
 
 			// VM PARAMETERS
-			int vmCount = 3;		// number of vms to be created
+			int vmCount = 9;		// number of vms to be created
 			int vmMips = 250;		// mips performance of a VM
 			int vmPesNumber = 1;	// number of PEs
 			int vmRam = 2048;		// vm memory (MB)
@@ -115,8 +119,8 @@ public class HdfsExample0 {
 
 			// TODO: integrare questa parte nel metodo createVmList
 			vmList.get(0).setHdfsType(HDFS_CLIENT);
-			vmList.get(1).setHdfsType(HDFS_DN);
-			vmList.get(2).setHdfsType(HDFS_DN);
+			for (int i = 1; i < vmList.size(); i++)
+				vmList.get(i).setHdfsType(HDFS_DN);
 
 			//submit vm list to the broker
 			broker.submitVmList(vmList);
@@ -259,12 +263,15 @@ public class HdfsExample0 {
 		int hostBw = requiredValues[5];
 
 		// values for Storage
-		int hddNumber = requiredValues[6];
+		int hddNumber = requiredValues[6]; 	// non serve più perchè faccio un singolo hdd per host
 		int hddSize = requiredValues[7];
+
+		int hostsPerRack = requiredValues[8];
+		int baseRackId = requiredValues[9];
 
 		// questo metodo, se tutto va bene, mi deve ritornare una lista di Hosts, con Id crescente, ognuno
 		// con la propria Pe list (ognuno deve avere una istanza diversa di Pe List)
-		List<HdfsHost> hostList = createHostList(hostNum, hostRam, hostStorageSize, hostBw, pesNum, mips);
+		List<HdfsHost> hostList = createHostList(hostNum, hostsPerRack, baseRackId, hostRam, hostStorageSize, hostBw, pesNum, mips);
 
 		// DatacenterCharacteristics
 		String arch = "x86";			// system architecture
@@ -276,7 +283,7 @@ public class HdfsExample0 {
 		double costPerStorage = 0.001;	// the cost of using storage in this resource
 		double costPerBw = 0.0;			// the cost of using bw in this resource
 
-		LinkedList<Storage> storageList = createStorageList(hddNumber, hddSize);
+		LinkedList<Storage> storageList = createStorageList(hostList, hddSize);
 
 		DatacenterCharacteristics characteristics = new DatacenterCharacteristics(
 				arch, os, vmm, hostList, time_zone, cost, costPerMem, costPerStorage, costPerBw);
@@ -311,12 +318,15 @@ public class HdfsExample0 {
 		int hostBw = requiredValues[5];
 
 		// values for Storage
-		int hddNumber = requiredValues[6];
+		int hddNumber = requiredValues[6];	// non lo uso più perchè metto un hard drive per host
 		int hddSize = requiredValues[7];
+
+		int hostsPerRack = requiredValues[8];
+		int baseRackId = requiredValues[9];
 
 		// questo metodo, se tutto va bene, mi deve ritornare una lista di Hosts, con Id crescente, ognuno
 		// con la propria Pe list (ognuno deve avere una istanza diversa di Pe List)
-		List<HdfsHost> hostList = createHostList(hostNum, hostRam, hostStorageSize, hostBw, pesNum, mips);
+		List<HdfsHost> hostList = createHostList(hostNum, hostsPerRack, baseRackId, hostRam, hostStorageSize, hostBw, pesNum, mips);
 
 		// DatacenterCharacteristics
 		String arch = "x86";			// system architecture
@@ -328,7 +338,7 @@ public class HdfsExample0 {
 		double costPerStorage = 0.001;	// the cost of using storage in this resource
 		double costPerBw = 0.0;			// the cost of using bw in this resource
 
-		LinkedList<Storage> storageList = createStorageList(hddNumber, hddSize);
+		LinkedList<Storage> storageList = createStorageList(hostList, hddSize);
 
 		DatacenterCharacteristics characteristics = new DatacenterCharacteristics(
 				arch, os, vmm, hostList, time_zone, cost, costPerMem, costPerStorage, costPerBw);

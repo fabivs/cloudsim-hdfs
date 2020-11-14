@@ -226,7 +226,9 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
             }
             // nel caso sia una DN VM
             if (tempVm.getHdfsType() == CloudSimTags.HDFS_DN) {
-                tempData = new int[]{tempVm.getId(), datacenterId};
+                HdfsHost tempHost = (HdfsHost) tempVm.getHost();
+                // invio al NameNode 4 valori: Id del nodo, Id del datacenter, Id del rack, capacità di storage
+                tempData = new int[]{tempVm.getId(), datacenterId, tempHost.getRackId(), (int) tempHost.getProperStorage().getCapacity()};
                 sendNow(nameNodeId, CloudSimTags.HDFS_NAMENODE_ADD_DN, tempData);
             }
 

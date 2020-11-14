@@ -523,12 +523,12 @@ public class HdfsDatacenter extends Datacenter {
         }
 
         // the file "hdfsBlock" now has a specific file name, a file size, and the owner vm id (as a string)
-        // now we add the file to the storage obj inside this Databacenter, and we estimate the required time
+        // now we add the file to the storage obj inside this Datacenter, and we estimate the required time
         // (this is all done automatically by the method addFile())
 
         Storage tempStorage = null;
 
-        // cycle through all the available drives in the Database
+        // cycle through all the available drives in the Datacenter
         for (int i = 0; i < getStorageList().size(); i++) {
 
             // get the drive i

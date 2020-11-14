@@ -57,6 +57,24 @@ public class HarddriveStorage implements Storage {
 	/** The average seek time in seconds. */
 	private double avgSeekTime;
 
+	// The host this drive belongs to
+	private int hostId;
+
+	public HarddriveStorage(String name, double capacity, int hostId) throws ParameterException {
+		if (name == null || name.length() == 0) {
+			throw new ParameterException("HarddriveStorage(): Error - invalid storage name.");
+		}
+
+		if (capacity <= 0) {
+			throw new ParameterException("HarddriveStorage(): Error - capacity <= 0.");
+		}
+
+		this.name = name;
+		this.capacity = capacity;
+		this.hostId = hostId;
+		init();
+	}
+
 	/**
 	 * Creates a new hard drive storage with a given name and capacity.
 	 * 
@@ -558,4 +576,11 @@ public class HarddriveStorage implements Storage {
 		return result;
 	}
 
+	public int getHostId() {
+		return hostId;
+	}
+
+	public void setHostId(int hostId) {
+		this.hostId = hostId;
+	}
 }
