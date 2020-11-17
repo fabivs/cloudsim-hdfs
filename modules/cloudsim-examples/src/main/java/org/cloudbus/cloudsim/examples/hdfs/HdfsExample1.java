@@ -40,7 +40,7 @@ public class HdfsExample1 {
 	 */
 	public static void main(String[] args) {
 
-		Log.printLine("Starting HdfsExample0...");
+		Log.printLine("Starting HdfsExample1...");
 
 		try {
 
@@ -225,7 +225,7 @@ public class HdfsExample1 {
         	// printing the status of the Drives in the Datacenters
         	printStorageList(datacenterList);
 
-			Log.printLine("HdfsExample0 finished!");
+			Log.printLine("HdfsExample1 finished!");
 		}
 		catch (Exception e) {
 			e.printStackTrace();
