@@ -131,7 +131,8 @@ public class HdfsExample1 {
 			broker.submitVmList(vmList);
 
 			// Global broker (delayato)
-			GlobalBroker secondBroker = new GlobalBroker("SecondBroker", nameNode.getId(), datacenter0);
+			GlobalBroker secondBroker = new GlobalBroker("SecondBroker", 800, 3, nameNode.getId(), datacenter0);
+			GlobalBroker thirdBroker = new GlobalBroker("ThirdBroker", 1600, 6, nameNode.getId(), datacenter0);
 
 			// submit the Data nodes vms to the replication broker
 			List<HdfsVm> dnList = new ArrayList<HdfsVm>();
@@ -389,11 +390,15 @@ public class HdfsExample1 {
 		private HdfsDatacenterBroker broker;
 		private HdfsDatacenter clientDatacenter;
 		private int nameNodeId;
+		private int delay;
+		private int baseBlockIndex;
 
-		public GlobalBroker(String name, int nameNodeId, HdfsDatacenter clientDatacenter) {
+		public GlobalBroker(String name, int delay, int baseBlockIndex, int nameNodeId, HdfsDatacenter clientDatacenter) {
 			super(name);
 			this.clientDatacenter = clientDatacenter;
 			this.nameNodeId = nameNodeId;
+			this.delay = delay;
+			this.baseBlockIndex = baseBlockIndex;
 		}
 
 		@Override
@@ -447,7 +452,7 @@ public class HdfsExample1 {
 
 					List<File> blockList = null;
 					try {
-						blockList = createBlockList(blockCount, blockSize, 3);
+						blockList = createBlockList(blockCount, blockSize, baseBlockIndex);
 					} catch (ParameterException e) {
 						e.printStackTrace();
 					}
@@ -509,7 +514,7 @@ public class HdfsExample1 {
 		@Override
 		public void startEntity() {
 			Log.printLine(super.getName()+" is starting...");
-			schedule(getId(), 800, CREATE_BROKER);
+			schedule(getId(), delay, CREATE_BROKER);
 		}
 
 		@Override
