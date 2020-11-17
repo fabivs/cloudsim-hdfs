@@ -60,13 +60,13 @@ public class HdfsExample1 {
 			int datacenterPeCount = 1;			// number of PEs per Host
 
 			// values for Hosts
-			int datacenterHostCount = 9;		// number of Hosts (in totale nel Datacenter)
+			int datacenterHostCount = 12;		// number of Hosts (in totale nel Datacenter)
 			int datacenterHostRam = 2048;		// amount of RAM for each Host
 			int datacenterHostStorage = 100000;	// amount of Storage assigned to each Host
 			int datacenterHostBw = 10000;		// amount of Bandwidth assigned to each Host
 
 			// values for Storage
-			int datacenterDiskCount = 9;		// number of Hard Drives in the Datacenter (non è più usato)
+			int datacenterDiskCount = 12;		// number of Hard Drives in the Datacenter (non è più usato)
 			int datacenterDiskSize = 100000;	// capacity of each Hard Drive
 
 			// values for Racks
@@ -110,7 +110,7 @@ public class HdfsExample1 {
 			// Fourth step: Create VMs
 
 			// VM PARAMETERS
-			int vmCount = 11;		// number of vms to be created
+			int vmCount = 13;		// number of vms to be created
 			int vmMips = 250;		// mips performance of a VM
 			int vmPesNumber = 1;	// number of PEs
 			int vmRam = 2048;		// vm memory (MB)
@@ -415,7 +415,7 @@ public class HdfsExample1 {
 					broker.setNameNodeId(nameNodeId);
 
 					// VM PARAMETERS
-					int vmCount = 11;		// number of vms to be created
+					int vmCount = 13;		// number of vms to be created
 					int vmMips = 250;		// mips performance of a VM
 					int vmPesNumber = 1;	// number of PEs
 					int vmRam = 2048;		// vm memory (MB)
