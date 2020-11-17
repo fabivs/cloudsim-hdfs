@@ -93,6 +93,23 @@ public final class HdfsUtils {
         return blockList;
     }
 
+    public static List<File> createBlockList(int count, int blockSize, int baseIndex) throws ParameterException {
+
+        List<File> blockList = new ArrayList<File>();
+
+        String blockName;
+        File block;
+
+        for (int i = 0; i < count; i++){
+
+            blockName = "Block_" + String.valueOf(i+baseIndex);
+            block = new File(blockName, blockSize);
+            blockList.add(block);
+        }
+
+        return blockList;
+    }
+
     // questa linked list sarà poi la linked list di storage in DatacenterCharacteristics
     // per ogni host creo un hard drive
     public static LinkedList<Storage> createStorageList(List<HdfsHost> hostList, int storageSize) throws ParameterException {
@@ -194,6 +211,9 @@ public final class HdfsUtils {
             Log.printLine("Datacenter ID: " + datacenter.getId());
 
             for (Storage drive : datacenter.getStorageList()){
+                HarddriveStorage tempDrive = (HarddriveStorage) drive;
+                HdfsHost tempHost = (HdfsHost) datacenter.getHostList().get(tempDrive.getHostId());
+                Log.printLine("Rack ID : " + tempHost.getRackId());
                 Log.printLine(indent + "Drive:  " + drive.getName() + ", Maximum capacity: " + drive.getCapacity() +
                         " MB, Used space: " + drive.getCurrentSize() + " MB, Free Space: " + drive.getAvailableSpace() + " MB");
                 Log.printLine(indent + indent + "File list: (Number of stored files: " + drive.getNumStoredFile() + ")");

@@ -7,132 +7,211 @@
  * Copyright (c) 2009, The University of Melbourne, Australia
  */
 
-
 package org.cloudbus.cloudsim.examples.hdfs;
 
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
-import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
-import org.cloudbus.cloudsim.provisioners.PeProvisionerSimple;
-import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
+import org.cloudbus.cloudsim.core.SimEntity;
+import org.cloudbus.cloudsim.core.SimEvent;
+import org.cloudbus.cloudsim.hdfs.*;
 
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
 
-/**
- * An example showing how to create
- * scalable simulations.
- */
+import static org.cloudbus.cloudsim.core.CloudSimTags.HDFS_CLIENT;
+import static org.cloudbus.cloudsim.core.CloudSimTags.HDFS_DN;
+import static org.cloudbus.cloudsim.examples.hdfs.utils.HdfsUtils.*;
+
 public class HdfsExample1 {
 
 	/** The cloudlet list. */
 	private static List<Cloudlet> cloudletList;
 
 	/** The vmlist. */
-	private static List<Vm> vmlist;
+	private static List<HdfsVm> vmList;
 
-	// un metodo che crea tante vms quanto indicato dall'int "vms" passato (usato nel ciclo for)
-	private static List<Vm> createVM(int userId, int vms) {
-
-		//Creates a container to store VMs. This list is passed to the broker later
-		LinkedList<Vm> list = new LinkedList<Vm>();
-
-		//VM Parameters
-		long size = 10000; //image size (MB)
-		int ram = 512; //vm memory (MB)
-		int mips = 1000;
-		long bw = 1000;
-		int pesNumber = 1; //number of cpus
-		String vmm = "Xen"; //VMM name
-
-		//create VMs
-		Vm[] vm = new Vm[vms];
-
-		// funziona così: vm è un array di dimensione "vms", nel ciclo riempiamo questo array di tante nuove vm,
-		// ognuna di queste vm è anche aggiunta alla lista "list", che è ritornata alla fine, fuori dal ciclo
-		for(int i=0;i<vms;i++){
-			vm[i] = new Vm(i, userId, mips, pesNumber, ram, bw, size, vmm, new CloudletSchedulerTimeShared());
-			//to create a VM with a space shared scheduling policy for cloudlets:
-			//vm[i] = Vm(i, userId, mips, pesNumber, ram, bw, size, priority, vmm, new CloudletSchedulerSpaceShared());
-
-			list.add(vm[i]);
-		}
-
-		return list;
-	}
-
-
-	// analogo al metodo delle vms, ma per i cloudlets
-	private static List<Cloudlet> createCloudletList(int userId, int cloudletCount){
-		// Creates a container to store Cloudlets
-		LinkedList<Cloudlet> list = new LinkedList<Cloudlet>();
-
-		//cloudlet parameters
-		long length = 1000;
-		long fileSize = 300;
-		long outputSize = 300;
-		int pesNumber = 1;
-		UtilizationModel utilizationModel = new UtilizationModelFull();
-
-		Cloudlet[] cloudlet = new Cloudlet[cloudletCount];
-
-		for(int i=0;i<cloudletCount;i++){
-			cloudlet[i] = new Cloudlet(i, length, pesNumber, fileSize, outputSize, utilizationModel, utilizationModel, utilizationModel);
-			// setting the owner of these Cloudlets
-			cloudlet[i].setUserId(userId);
-			list.add(cloudlet[i]);
-		}
-
-		return list;
-	}
-
-	/*
-	// metodo per creare un singolo Cloudlet
-	private static Cloudlet createCloudlet(){
-		return null;
-	}
-	*/
-
-	////////////////////////// STATIC METHODS ///////////////////////
+	/** The datacenter list */
+	private static List<HdfsDatacenter> datacenterList;
 
 	/**
 	 * Creates main() to run this example
 	 */
 	public static void main(String[] args) {
-		Log.printLine("Starting Hdfs Example 1...");
+
+		Log.printLine("Starting HdfsExample0...");
 
 		try {
-			// First step: Initialize the CloudSim package. It should be called
-			// before creating any entities.
-			int num_user = 1;   // number of grid users
-			Calendar calendar = Calendar.getInstance();
-			boolean trace_flag = false;  // mean trace events
 
-			// Initialize the CloudSim library
+			// First step: Initialize CloudSim
+			int num_user = 5;   // number of cloud users
+			Calendar calendar = Calendar.getInstance();
+			boolean trace_flag = false;  // means trace events
+
 			CloudSim.init(num_user, calendar, trace_flag);
 
-			// Second step: Create Datacenters
-			//Datacenters are the resource providers in CloudSim. We need at list one of them to run a CloudSim simulation
-			@SuppressWarnings("unused")
-			Datacenter datacenter0 = createDatacenter("Datacenter_0");
-			@SuppressWarnings("unused")
-			Datacenter datacenter1 = createDatacenter("Datacenter_1");
+			// Second step: create the datacenters
 
-			//Third step: Create Broker
-			DatacenterBroker broker = createBroker();
+			// DATACENTER PARAMETERS
+
+			// values for PEs
+			int datacenterPeMips = 1000;		// mips (performance) of a single PE
+			int datacenterPeCount = 1;			// number of PEs per Host
+
+			// values for Hosts
+			int datacenterHostCount = 9;		// number of Hosts (in totale nel Datacenter)
+			int datacenterHostRam = 2048;		// amount of RAM for each Host
+			int datacenterHostStorage = 100000;	// amount of Storage assigned to each Host
+			int datacenterHostBw = 10000;		// amount of Bandwidth assigned to each Host
+
+			// values for Storage
+			int datacenterDiskCount = 9;		// number of Hard Drives in the Datacenter (non è più usato)
+			int datacenterDiskSize = 100000;	// capacity of each Hard Drive
+
+			// values for Racks
+			int datacenterHostsPerRack = 3;		// amount of Hosts in each Rack of the Datacenter
+			int datacenterBaseRackId = 0;
+
+			// create an array with all parameters stored inside
+			int[] datacenterParameters = new int[]{datacenterPeMips, datacenterPeCount, datacenterHostCount, datacenterHostRam,
+					datacenterHostStorage, datacenterHostBw, datacenterDiskCount, datacenterDiskSize, datacenterHostsPerRack, datacenterBaseRackId};
+
+			int[] datacenterParametersClient = new int[]{datacenterPeMips, datacenterPeCount, datacenterHostCount-8, datacenterHostRam,
+					datacenterHostStorage, datacenterHostBw, datacenterDiskCount-8, datacenterDiskSize, datacenterHostsPerRack, datacenterBaseRackId};
+
+			// metto i Datacenters in una list per convenience, in particolare per il metodo printStorageList
+			datacenterList =  new ArrayList<HdfsDatacenter>();
+
+			// Client datacenter
+			HdfsDatacenter datacenter0 = createDatacenter("Datacenter_0", datacenterParametersClient);
+			// Data Nodes datacenter (the starting Cloudlet ID needs to be different)
+			HdfsDatacenter datacenter1 = createDatacenterDataNodes("Datacenter_1", 0, datacenterParameters);
+
+
+			// Third step: Create Brokers
+
+			// CLIENT (Main) BROKER
+			HdfsDatacenterBroker broker = createBroker("Broker1");
 			int brokerId = broker.getId();
 
-			//Fourth step: Create VMs and Cloudlets and send them to broker
-			vmlist = createVM(brokerId,4); //creating 20 vms
-			cloudletList = createCloudletList(brokerId,8); // creating 40 cloudlets
+			// one REPLICATION BROKER for each datacenter for data nodes (ognuno con un nuovo cloudlet base id)
+			HdfsReplicationBroker replicationBroker = createBroker(100);
+			datacenter1.setReplicationBrokerId(replicationBroker.getId());
+			broker.getReplicationBrokersId().add(replicationBroker.getId());
 
-			broker.submitVmList(vmlist);
+			// creo il NameNode
+			int blockSize = 10000;
+			int defaultReplicas = 3;
+			NameNode nameNode = new NameNode("NameNode1", blockSize, defaultReplicas);
+
+			broker.setNameNodeId(nameNode.getId());
+
+			// Fourth step: Create VMs
+
+			// VM PARAMETERS
+			int vmCount = 11;		// number of vms to be created
+			int vmMips = 250;		// mips performance of a VM
+			int vmPesNumber = 1;	// number of PEs
+			int vmRam = 2048;		// vm memory (MB)
+			long vmBw = 1000;		// available bandwidth for a VM
+			long vmSize = 10000;	// image size (MB)
+			String vmm = "Xen";		// name of the Vm manager
+			String cloudletSchedulerType = "Time"; // either "Time" shared or "Space" shared
+
+			// NOTE: this will create all identical vms, to create VMs with different parameters, run this method multiple times
+			vmList = createVmList(vmCount, brokerId, vmMips, vmPesNumber, vmRam, vmBw, vmSize, vmm, cloudletSchedulerType);
+
+			// TODO: integrare questa parte nel metodo createVmList
+			vmList.get(0).setHdfsType(HDFS_CLIENT);
+			for (int i = 1; i < vmList.size(); i++)
+				vmList.get(i).setHdfsType(HDFS_DN);
+
+			//submit vm list to the broker
+			broker.submitVmList(vmList);
+
+			// Global broker (delayato)
+			GlobalBroker secondBroker = new GlobalBroker("SecondBroker", nameNode.getId(), datacenter0);
+
+			// submit the Data nodes vms to the replication broker
+			List<HdfsVm> dnList = new ArrayList<HdfsVm>();
+
+			// only the Data Nodes Vms will be added to the list that is submitted to the replication broker
+			for (HdfsVm iterVm : vmList)
+				if (iterVm.getHdfsType() == HDFS_DN)
+					dnList.add(iterVm);
+
+			replicationBroker.submitVmList(dnList);
+
+
+			// Fifth step: Create Cloudlets
+
+			cloudletList = new ArrayList<Cloudlet>();
+
+			// CLOUDLET PARAMETERS
+			int id = 0;
+			long length = 40000;
+			long fileSize = 300;
+			long outputSize = 300;
+			int pesNumber = 1;
+			UtilizationModel utilizationModel = new UtilizationModelFull();
+
+			// I'll make two blocks to transfer from vm1 to vm2 and from vm1 to vm3
+
+			// HDFS BLOCKS PARAMETERS
+			int blockCount = 3;		// block count deve sempre corrispondere al numero di cloudlets!
+
+			List<File> blockList = createBlockList(blockCount, blockSize);
+
+			// We have to store the files inside the drives of Datacenter 0 first, because the client will read them from there
+			datacenter0.addFiles(blockList);	// adds the files in the list as a series of separate files
+
+			// We have to make a list of strings for the "requiredFiles" field inside the HdfsCloudlet constructor
+			List<String> blockList1 = new ArrayList<String>();
+			blockList1.add(blockList.get(0).getName());
+
+			List<String> blockList2 = new ArrayList<String>();
+			blockList2.add(blockList.get(1).getName());
+
+			List<String> blockList3 = new ArrayList<String>();
+			blockList3.add(blockList.get(2).getName());
+
+			// Finally we can create the cloudlets
+			HdfsCloudlet cloudlet1 = new HdfsCloudlet(id, length, pesNumber, fileSize, outputSize, utilizationModel,
+					utilizationModel, utilizationModel, blockList1, blockSize);
+			cloudlet1.setUserId(brokerId);
+
+			id++;
+			utilizationModel = new UtilizationModelFull();
+			HdfsCloudlet cloudlet2 = new HdfsCloudlet(id, length, pesNumber, fileSize, outputSize, utilizationModel,
+					utilizationModel, utilizationModel, blockList2, blockSize);
+			cloudlet2.setUserId(brokerId);
+
+			id++;
+			utilizationModel = new UtilizationModelFull();
+			HdfsCloudlet cloudlet3 = new HdfsCloudlet(id, length, pesNumber, fileSize, outputSize, utilizationModel,
+					utilizationModel, utilizationModel, blockList3, blockSize);
+			cloudlet3.setUserId(brokerId);
+
+			// set a different number of replica per each file
+			cloudlet1.setReplicaNum(5);
+			cloudlet2.setReplicaNum(5);
+			cloudlet3.setReplicaNum(5);
+
+			// add the cloudlets to the list
+			cloudletList.add(cloudlet1);
+			cloudletList.add(cloudlet2);
+			cloudletList.add(cloudlet3);
+
+			// submit cloudlet list to the broker
 			broker.submitCloudletList(cloudletList);
 
-			// Fifth step: Starts the simulation
+			// bind the cloudlets to the vms, in questo caso entrambi vanno eseguiti sulla vm1
+			// che è la vm del Client che legge i files
+			broker.bindCloudletToVm(cloudlet1.getCloudletId(),vmList.get(0).getId());
+			broker.bindCloudletToVm(cloudlet2.getCloudletId(),vmList.get(0).getId());
+
+			// Eighth step: Starts the simulation
 			CloudSim.startSimulation();
 
 			// Final step: Print results when simulation is over
@@ -140,144 +219,147 @@ public class HdfsExample1 {
 
 			CloudSim.stopSimulation();
 
-			printCloudletList(newList);
+        	printCloudletList(newList);
 
-			Log.printLine("CloudSimExample6 finished!");
+        	// printing the status of the Drives in the Datacenters
+        	printStorageList(datacenterList);
+
+			Log.printLine("HdfsExample0 finished!");
 		}
-		catch (Exception e)
-		{
+		catch (Exception e) {
 			e.printStackTrace();
 			Log.printLine("The simulation has been terminated due to an unexpected error");
 		}
 	}
 
-	private static Datacenter createDatacenterNew(String name){
 
-		// Un primo basic HDFS DataCenter, che include solo Data Nodes
-		// Ogni DN (Data Node) sarà un Host, che includerà soltanto due VM (un
+	/**
+	 * Creates a Datacenter
+	 * @param name name of the datacenter
+	 * @param requiredValues an array of 8 integers, which represent, in order:
+	 *                       mips performance for a PE, number of PEs,
+	 *                       number of Hosts, host RAM, host allocated Storage, host Bandwidth,
+	 *                       number of HDDs, size of each HDD
+	 * @return the datacenter object
+	 * @throws ParameterException
+	 */
+	private static HdfsDatacenter createDatacenter(String name, int[] requiredValues) throws ParameterException{
 
-		return null;
-	}
+		//List<HdfsHost> hostList;
+		//List<Pe> peList;
 
-	private static Datacenter createDatacenter(String name){
+		// values for Pes
+		int mips = requiredValues[0];
+		int pesNum = requiredValues[1];
 
-		// Here are the steps needed to create a PowerDatacenter:
-		// 1. We need to create a list to store one or more
-		//    Machines
-		List<Host> hostList = new ArrayList<Host>();
+		// values for Hosts
+		int hostNum = requiredValues[2];
+		int hostRam = requiredValues[3];
+		int hostStorageSize = requiredValues[4];
+		int hostBw = requiredValues[5];
 
-		// 2. A Machine contains one or more PEs or CPUs/Cores. Therefore, should
-		//    create a list to store these PEs before creating
-		//    a Machine.
-		List<Pe> peList1 = new ArrayList<Pe>();
+		// values for Storage
+		int hddNumber = requiredValues[6]; 	// non serve più perchè faccio un singolo hdd per host
+		int hddSize = requiredValues[7];
 
-		int mips = 1000;
+		int hostsPerRack = requiredValues[8];
+		int baseRackId = requiredValues[9];
 
-		// 3. Create PEs and add these into the list.
-		//for a quad-core machine, a list of 4 PEs is required:
-		peList1.add(new Pe(0, new PeProvisionerSimple(mips))); // need to store Pe id and MIPS Rating
-		peList1.add(new Pe(1, new PeProvisionerSimple(mips)));
-		peList1.add(new Pe(2, new PeProvisionerSimple(mips)));
-		peList1.add(new Pe(3, new PeProvisionerSimple(mips)));
+		// questo metodo, se tutto va bene, mi deve ritornare una lista di Hosts, con Id crescente, ognuno
+		// con la propria Pe list (ognuno deve avere una istanza diversa di Pe List)
+		List<HdfsHost> hostList = createHostList(hostNum, hostsPerRack, baseRackId, hostRam, hostStorageSize, hostBw, pesNum, mips);
 
-		//Another list, for a dual-core machine
-		List<Pe> peList2 = new ArrayList<Pe>();
-
-		peList2.add(new Pe(0, new PeProvisionerSimple(mips)));
-		peList2.add(new Pe(1, new PeProvisionerSimple(mips)));
-
-		//4. Create Hosts with its id and list of PEs and add them to the list of machines
-		int hostId=0;
-		int ram = 2048; //host memory (MB)
-		long storage = 1000000; //host storage
-		int bw = 10000;
-
-		hostList.add(
-    			new Host(
-    				hostId,
-    				new RamProvisionerSimple(ram),
-    				new BwProvisionerSimple(bw),
-    				storage,
-    				peList1,
-    				new VmSchedulerTimeShared(peList1)
-    			)
-    		); // This is our first machine
-
-		hostId++;
-
-		hostList.add(
-    			new Host(
-    				hostId,
-    				new RamProvisionerSimple(ram),
-    				new BwProvisionerSimple(bw),
-    				storage,
-    				peList2,
-    				new VmSchedulerTimeShared(peList2)
-    			)
-    		); // Second machine
-
-
-		//To create a host with a space-shared allocation policy for PEs to VMs:
-		//hostList.add(
-    	//		new Host(
-    	//			hostId,
-    	//			new CpuProvisionerSimple(peList1),
-    	//			new RamProvisionerSimple(ram),
-    	//			new BwProvisionerSimple(bw),
-    	//			storage,
-    	//			new VmSchedulerSpaceShared(peList1)
-    	//		)
-    	//	);
-
-		//To create a host with a oportunistic space-shared allocation policy for PEs to VMs:
-		//hostList.add(
-    	//		new Host(
-    	//			hostId,
-    	//			new CpuProvisionerSimple(peList1),
-    	//			new RamProvisionerSimple(ram),
-    	//			new BwProvisionerSimple(bw),
-    	//			storage,
-    	//			new VmSchedulerOportunisticSpaceShared(peList1)
-    	//		)
-    	//	);
-
-
-		// 5. Create a DatacenterCharacteristics object that stores the
-		//    properties of a data center: architecture, OS, list of
-		//    Machines, allocation policy: time- or space-shared, time zone
-		//    and its price (G$/Pe time unit).
-		String arch = "x86";      // system architecture
-		String os = "Linux";          // operating system
-		String vmm = "Xen";
-		double time_zone = 10.0;         // time zone this resource located
+		// DatacenterCharacteristics
+		String arch = "x86";			// system architecture
+		String os = "Linux";          	// operating system
+		String vmm = "Xen";				// virtual machine manager
+		double time_zone = 10.0;        // time zone this resource located
 		double cost = 3.0;              // the cost of using processing in this resource
 		double costPerMem = 0.05;		// the cost of using memory in this resource
-		double costPerStorage = 0.1;	// the cost of using storage in this resource
-		double costPerBw = 0.1;			// the cost of using bw in this resource
-		LinkedList<Storage> storageList = new LinkedList<Storage>();	//we are not adding SAN devices by now
+		double costPerStorage = 0.001;	// the cost of using storage in this resource
+		double costPerBw = 0.0;			// the cost of using bw in this resource
+
+		LinkedList<Storage> storageList = createStorageList(hostList, hddSize);
 
 		DatacenterCharacteristics characteristics = new DatacenterCharacteristics(
-                arch, os, vmm, hostList, time_zone, cost, costPerMem, costPerStorage, costPerBw);
+				arch, os, vmm, hostList, time_zone, cost, costPerMem, costPerStorage, costPerBw);
 
-
-		// 6. Finally, we need to create a PowerDatacenter object.
-		Datacenter datacenter = null;
+		// create and return the Datacenter object
+		HdfsDatacenter datacenter = null;
 		try {
-			datacenter = new Datacenter(name, characteristics, new VmAllocationPolicySimple(hostList), storageList, 0);
+			datacenter = new HdfsDatacenter(name, characteristics, new VmAllocationPolicySimple(hostList), storageList, 0);
+			datacenterList.add(datacenter);
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
 		return datacenter;
+
+	}
+
+	private static HdfsDatacenter createDatacenterDataNodes(String name, int replicationBrokerId, int[] requiredValues) throws ParameterException{
+
+		//List<HdfsHost> hostList;
+		//List<Pe> peList;
+
+		// values for Pes
+		int mips = requiredValues[0];
+		int pesNum = requiredValues[1];
+
+		// values for Hosts
+		int hostNum = requiredValues[2];
+		int hostRam = requiredValues[3];
+		int hostStorageSize = requiredValues[4];
+		int hostBw = requiredValues[5];
+
+		// values for Storage
+		int hddNumber = requiredValues[6];	// non lo uso più perchè metto un hard drive per host
+		int hddSize = requiredValues[7];
+
+		int hostsPerRack = requiredValues[8];
+		int baseRackId = requiredValues[9];
+
+		// questo metodo, se tutto va bene, mi deve ritornare una lista di Hosts, con Id crescente, ognuno
+		// con la propria Pe list (ognuno deve avere una istanza diversa di Pe List)
+		List<HdfsHost> hostList = createHostList(hostNum, hostsPerRack, baseRackId, hostRam, hostStorageSize, hostBw, pesNum, mips);
+
+		// DatacenterCharacteristics
+		String arch = "x86";			// system architecture
+		String os = "Linux";          	// operating system
+		String vmm = "Xen";				// virtual machine manager
+		double time_zone = 10.0;        // time zone this resource located
+		double cost = 3.0;              // the cost of using processing in this resource
+		double costPerMem = 0.05;		// the cost of using memory in this resource
+		double costPerStorage = 0.001;	// the cost of using storage in this resource
+		double costPerBw = 0.0;			// the cost of using bw in this resource
+
+		LinkedList<Storage> storageList = createStorageList(hostList, hddSize);
+
+		DatacenterCharacteristics characteristics = new DatacenterCharacteristics(
+				arch, os, vmm, hostList, time_zone, cost, costPerMem, costPerStorage, costPerBw);
+
+		// create and return the Datacenter object
+		HdfsDatacenter datacenter = null;
+		try {
+			datacenter = new HdfsDatacenter(name, replicationBrokerId, characteristics, new VmAllocationPolicySimple(hostList), storageList, 0);
+			datacenterList.add(datacenter);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return datacenter;
+
 	}
 
 	//We strongly encourage users to develop their own broker policies, to submit vms and cloudlets according
 	//to the specific rules of the simulated scenario
-	private static DatacenterBroker createBroker(){
+	private static HdfsDatacenterBroker createBroker(String name){
 
-		DatacenterBroker broker = null;
+		HdfsDatacenterBroker broker = null;
 		try {
-			broker = new DatacenterBroker("Broker");
+			broker = new HdfsDatacenterBroker(name);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
@@ -285,33 +367,179 @@ public class HdfsExample1 {
 		return broker;
 	}
 
-	/**
-	 * Prints the Cloudlet objects
-	 * @param list  list of Cloudlets
-	 */
-	private static void printCloudletList(List<Cloudlet> list) {
-		int size = list.size();
-		Cloudlet cloudlet;
+	private static HdfsReplicationBroker createBroker(int cloudletBaseId){
 
-		String indent = "    ";
-		Log.printLine();
-		Log.printLine("========== OUTPUT ==========");
-		Log.printLine("Cloudlet ID" + indent + "STATUS" + indent +
-				"Data center ID" + indent + "VM ID" + indent + indent + "Time" + indent + "Start Time" + indent + "Finish Time");
+		HdfsReplicationBroker broker = null;
+		try {
+			broker = new HdfsReplicationBroker("ReplicationBroker", cloudletBaseId);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+		return broker;
+	}
 
-		DecimalFormat dft = new DecimalFormat("###.##");
-		for (int i = 0; i < size; i++) {
-			cloudlet = list.get(i);
-			Log.print(indent + cloudlet.getCloudletId() + indent + indent);
+	// GlobalBroker is used to delay the execution of the broker
 
-			if (cloudlet.getCloudletStatus() == Cloudlet.SUCCESS){
-				Log.print("SUCCESS");
+	public static class GlobalBroker extends SimEntity {
 
-				Log.printLine( indent + indent + cloudlet.getResourceId() + indent + indent + indent + cloudlet.getVmId() +
-						indent + indent + indent + dft.format(cloudlet.getActualCPUTime()) +
-						indent + indent + dft.format(cloudlet.getExecStartTime())+ indent + indent + indent + dft.format(cloudlet.getFinishTime()));
+		private static final int CREATE_BROKER = 0;
+		private List<HdfsVm> vmList;
+		private List<HdfsCloudlet> cloudletList;
+		private HdfsDatacenterBroker broker;
+		private HdfsDatacenter clientDatacenter;
+		private int nameNodeId;
+
+		public GlobalBroker(String name, int nameNodeId, HdfsDatacenter clientDatacenter) {
+			super(name);
+			this.clientDatacenter = clientDatacenter;
+			this.nameNodeId = nameNodeId;
+		}
+
+		@Override
+		public void processEvent(SimEvent ev) {
+			switch (ev.getTag()) {
+				case CREATE_BROKER:
+
+					printStorageList(datacenterList);
+
+					setBroker(createBroker(super.getName()+"_"));
+
+					broker.setNameNodeId(nameNodeId);
+
+					// VM PARAMETERS
+					int vmCount = 11;		// number of vms to be created
+					int vmMips = 250;		// mips performance of a VM
+					int vmPesNumber = 1;	// number of PEs
+					int vmRam = 2048;		// vm memory (MB)
+					long vmBw = 1000;		// available bandwidth for a VM
+					long vmSize = 10000;	// image size (MB)
+					String vmm = "Xen";		// name of the Vm manager
+					String cloudletSchedulerType = "Time"; // either "Time" shared or "Space" shared
+
+					// NOTE: this will create all identical vms, to create VMs with different parameters, run this method multiple times
+					vmList = createVmList(vmCount, broker.getId(), vmMips, vmPesNumber, vmRam, vmBw, vmSize, vmm, cloudletSchedulerType);
+
+					// TODO: integrare questa parte nel metodo createVmList
+					vmList.get(0).setHdfsType(HDFS_CLIENT);
+					for (int i = 1; i < vmList.size(); i++)
+						vmList.get(i).setHdfsType(HDFS_DN);
+
+					setVmList(vmList);	// prendiamo le VMs che già esistono
+
+					// dobbiamo creare ora nuovi cloudlets con nuovi blocchi
+
+					cloudletList = new ArrayList<HdfsCloudlet>();
+
+					// CLOUDLET PARAMETERS
+					int id = 0;
+					long length = 40000;
+					long fileSize = 300;
+					long outputSize = 300;
+					int pesNumber = 1;
+					UtilizationModel utilizationModel = new UtilizationModelFull();
+
+					// I'll make two blocks to transfer from vm1 to vm2 and from vm1 to vm3
+
+					// HDFS BLOCKS PARAMETERS
+					int blockCount = 3;		// block count deve sempre corrispondere al numero di cloudlets!
+					int blockSize = 10000;
+
+					List<File> blockList = null;
+					try {
+						blockList = createBlockList(blockCount, blockSize, 3);
+					} catch (ParameterException e) {
+						e.printStackTrace();
+					}
+
+					// We have to store the files inside the drives of Datacenter 0 first, because the client will read them from there
+					clientDatacenter.addFiles(blockList);	// adds the files in the list as a series of separate files
+
+					// We have to make a list of strings for the "requiredFiles" field inside the HdfsCloudlet constructor
+					List<String> blockList1 = new ArrayList<String>();
+					blockList1.add(blockList.get(0).getName());
+
+					List<String> blockList2 = new ArrayList<String>();
+					blockList2.add(blockList.get(1).getName());
+
+					List<String> blockList3 = new ArrayList<String>();
+					blockList3.add(blockList.get(2).getName());
+
+					// Finally we can create the cloudlets
+					HdfsCloudlet cloudlet1 = new HdfsCloudlet(id, length, pesNumber, fileSize, outputSize, utilizationModel,
+							utilizationModel, utilizationModel, blockList1, blockSize);
+					cloudlet1.setUserId(broker.getId());
+
+					id++;
+					utilizationModel = new UtilizationModelFull();
+					HdfsCloudlet cloudlet2 = new HdfsCloudlet(id, length, pesNumber, fileSize, outputSize, utilizationModel,
+							utilizationModel, utilizationModel, blockList2, blockSize);
+					cloudlet2.setUserId(broker.getId());
+
+					id++;
+					utilizationModel = new UtilizationModelFull();
+					HdfsCloudlet cloudlet3 = new HdfsCloudlet(id, length, pesNumber, fileSize, outputSize, utilizationModel,
+							utilizationModel, utilizationModel, blockList3, blockSize);
+					cloudlet3.setUserId(broker.getId());
+
+					// add the cloudlets to the list
+					cloudletList.add(cloudlet1);
+					cloudletList.add(cloudlet2);
+					cloudletList.add(cloudlet3);
+
+					setCloudletList(cloudletList);
+
+					broker.submitVmList(getVmList());
+					broker.submitCloudletList(getCloudletList());
+
+					broker.bindCloudletToVm(cloudlet1.getCloudletId(),vmList.get(0).getId());
+					broker.bindCloudletToVm(cloudlet2.getCloudletId(),vmList.get(0).getId());
+
+					CloudSim.resumeSimulation();
+
+					break;
+
+				default:
+					Log.printLine(getName() + ": unknown event type");
+					break;
 			}
 		}
 
+		// questo è quello che avviene quando la simulazione avvia questo broker
+		@Override
+		public void startEntity() {
+			Log.printLine(super.getName()+" is starting...");
+			schedule(getId(), 800, CREATE_BROKER);
+		}
+
+		@Override
+		public void shutdownEntity() {
+		}
+
+		public List<HdfsVm> getVmList() {
+			return vmList;
+		}
+
+		protected void setVmList(List<HdfsVm> vmList) {
+			this.vmList = vmList;
+		}
+
+		public List<HdfsCloudlet> getCloudletList() {
+			return cloudletList;
+		}
+
+		protected void setCloudletList(List<HdfsCloudlet> cloudletList) {
+			this.cloudletList = cloudletList;
+		}
+
+		public DatacenterBroker getBroker() {
+			return broker;
+		}
+
+		protected void setBroker(HdfsDatacenterBroker broker) {
+			this.broker = broker;
+		}
+
 	}
+
 }

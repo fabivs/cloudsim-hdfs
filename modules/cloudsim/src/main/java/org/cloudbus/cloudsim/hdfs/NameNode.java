@@ -223,8 +223,10 @@ public class NameNode extends SimEntity {
         double currentMinRackUsage;
 
         // 2 nodi max per rack, fino a esaurimento repliche
-        // scegliamo il rack cono meno overall usage e con almeno due nodi che fanno parte di quelli accettabili
-        for (int i = 0; i <= (replicasNumber % 2); i++){
+        // scegliamo il rack con meno overall usage e con almeno due nodi che fanno parte di quelli accettabili
+        double cycles = replicasNumber / (double) 2;
+        cycles = (int) Math.ceil(cycles);
+        for (int i = 1; i <= cycles; i++){
 
             int validNodesPerRack = 0;
             List<Integer> originalAcceptableRacks = new ArrayList<Integer>(acceptableRacks);
@@ -256,21 +258,27 @@ public class NameNode extends SimEntity {
 
             // all'interno di questo rack scelgo i due nodi con usage ratio minore
 
+            Integer previousNode = null;
+            Integer chosenNode;
+
             for (int k = 0; k < 2; k++){
 
                 double minNodeUsage = 999.9;
-                Integer chosenNode = null;
+                chosenNode = null;
 
                 for (Integer tempNode : acceptableDestinations){
-                    if (getMapDataNodeToUsage().get(tempNode) < minNodeUsage && getMapDataNodeToRackId().get(tempNode).equals(chosenRack)){
+                    if (getMapDataNodeToUsage().get(tempNode) < minNodeUsage && getMapDataNodeToRackId().get(tempNode).equals(chosenRack) && !tempNode.equals(previousNode)){
                         chosenNode = tempNode;
                         minNodeUsage = getMapDataNodeToUsage().get(tempNode);
                     }
                 }
 
                 // il nodo scelto lo aggiungo alla lista di risultati e lo rimuovo dalle destinations candidate
-                destinationIds.add(chosenNode);
-                acceptableDestinations.remove(chosenNode);
+                if (chosenNode != null){
+                    previousNode = chosenNode;
+                    destinationIds.add(chosenNode);
+                    acceptableDestinations.remove(chosenNode);
+                }
             }
 
         }

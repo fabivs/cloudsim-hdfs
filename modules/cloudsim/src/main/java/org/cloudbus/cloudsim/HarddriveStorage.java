@@ -433,6 +433,7 @@ public class HarddriveStorage implements Storage {
 		}
 
 		// check if the same file name is already taken
+		boolean test = contains(file.getName());
 		if (!contains(file.getName())) {
 			double seekTime = getSeekTime(file.getSize());
 			double transferTime = getTransferTime(file.getSize());
