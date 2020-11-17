@@ -9,6 +9,7 @@ import org.cloudbus.cloudsim.core.CloudSimTags;
 import org.cloudbus.cloudsim.core.SimEvent;
 import org.cloudbus.cloudsim.lists.VmList;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -16,6 +17,9 @@ import java.util.List;
 // Questo è un normale broker che però non alloca nessuna VM quando viene eseguito, il suo unico ruolo sarà
 // di rigirare il cloudlets di replicazione alle vms appropriate
 public class HdfsReplicationBroker extends HdfsDatacenterBroker {
+
+    // used only to print prettier logs
+    DecimalFormat df = new DecimalFormat("#.###");
 
     // constructors
 
@@ -103,7 +107,7 @@ public class HdfsReplicationBroker extends HdfsDatacenterBroker {
                 vm = VmList.getById(getVmsCreatedList(), cloudlet.getVmId());
                 if (vm == null) { // vm was not created
                     if(!Log.isDisabled()) {
-                        Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Postponing execution of Data Cloudlet ",
+                        Log.printConcatLine(df.format(CloudSim.clock()), ": ", getName(), ": Postponing execution of Data Cloudlet ",
                                 cloudlet.getCloudletId(), ": bound VM not available");
                     }
                     continue;
@@ -111,7 +115,7 @@ public class HdfsReplicationBroker extends HdfsDatacenterBroker {
             }
 
             if (!Log.isDisabled()) {
-                Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Sending Data Cloudlet ",
+                Log.printConcatLine(df.format(CloudSim.clock()), ": ", getName(), ": Sending Data Cloudlet ",
                         cloudlet.getCloudletId(), " to VM #", vm.getId());
             }
 
@@ -135,7 +139,7 @@ public class HdfsReplicationBroker extends HdfsDatacenterBroker {
 
         HdfsCloudlet originalCloudlet = (HdfsCloudlet) ev.getData();
 
-        Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": ReplicationCloudlet ", originalCloudlet.getCloudletId(),
+        Log.printConcatLine(df.format(CloudSim.clock()), ": ", getName(), ": ReplicationCloudlet ", originalCloudlet.getCloudletId(),
                 ": the block has been read, sending it to the Data Node...");
 
         // non molto elegante, ma dovrebbe funzionare lol, da qualche parte sto metodo lo devo prendere
@@ -148,7 +152,7 @@ public class HdfsReplicationBroker extends HdfsDatacenterBroker {
         List<Integer> destinationVms = originalCloudlet.getDestVmIds();
 
         if (destinationVms.isEmpty()){
-            Log.printLine("The replication pipeline is over");
+            Log.printLine(df.format(CloudSim.clock()) + ": " + getName() + ": The replication pipeline is over");
             return;
         }
 
@@ -175,6 +179,11 @@ public class HdfsReplicationBroker extends HdfsDatacenterBroker {
         avremo una corretta simulazione del delay per l'invio del file tramite network
         */
         submitDNCloudlets();
+
+    }
+
+    @Override
+    protected void processResourceCharacteristics(SimEvent ev) {
 
     }
 

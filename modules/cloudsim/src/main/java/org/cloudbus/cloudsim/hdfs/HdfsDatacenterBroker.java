@@ -10,6 +10,7 @@ import org.cloudbus.cloudsim.core.SimEvent;
 import org.cloudbus.cloudsim.lists.VmList;
 import org.cloudbus.cloudsim.core.SimEntity;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -23,6 +24,9 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
     protected HdfsCloudlet stagedCloudlet;
 
     protected List<Integer> replicationBrokersId;
+
+    // used only to print prettier logs
+    DecimalFormat df = new DecimalFormat("#.###");
 
     /**
      * Created a new DatacenterBroker object. Remember to set the name node as well after creation!
@@ -98,8 +102,8 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
 
         HdfsCloudlet originalCloudlet = (HdfsCloudlet) ev.getData();
 
-        Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Cloudlet ", originalCloudlet.getCloudletId(),
-                ": the block has been read, sending it to the Data Node...");
+        Log.printConcatLine(df.format(CloudSim.clock()), ": ", getName(), ": Cloudlet ", originalCloudlet.getCloudletId(),
+                ": the block has been read, communicating with the NameNode...");
 
         // non molto elegante, ma dovrebbe funzionare lol, da qualche parte sto metodo lo devo prendere
         stagedCloudlet = HdfsCloudlet.cloneCloudletAssignNewId(originalCloudlet, currentCloudletMaxId + 1);
@@ -158,7 +162,7 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
 
         HdfsCloudlet originalCloudlet = (HdfsCloudlet) ev.getData();
 
-         Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": ReplicationCloudlet ", originalCloudlet.getCloudletId(),
+         Log.printConcatLine(df.format(CloudSim.clock()), ": ", getName(), ": ReplicationCloudlet ", originalCloudlet.getCloudletId(),
                 ": the block has been read, sending it to the Data Node...");
 
         // non molto elegante, ma dovrebbe funzionare lol, da qualche parte sto metodo lo devo prendere
@@ -171,7 +175,7 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
         List<Integer> destinationVms = originalCloudlet.getDestVmIds();
 
         if (destinationVms.isEmpty()){
-            Log.printLine("The replication pipeline is over");
+            Log.printLine(df.format(CloudSim.clock()) + ": " + getName() + ": The replication pipeline is over");
             return;
         }
 
@@ -213,8 +217,8 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
         if (result == CloudSimTags.TRUE) {
             getVmsToDatacentersMap().put(vmId, datacenterId);
             getVmsCreatedList().add(VmList.getById(getVmList(), vmId));
-            Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": VM #", vmId,
-                    " has been created in Datacenter #", datacenterId, ", Host #",
+            Log.printConcatLine(df.format(CloudSim.clock()), ": ", getName(), ": VM #", vmId,
+                    " has been created in Datacenter#", datacenterId-1, ", Host #",
                     VmList.getById(getVmsCreatedList(), vmId).getHost().getId());
 
             /* PEZZO AGGIUNTO PER HDFS NAME NODE */
@@ -241,8 +245,8 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
             }
 
         } else {
-            Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Creation of VM #", vmId,
-                    " failed in Datacenter #", datacenterId);
+            Log.printConcatLine(df.format(CloudSim.clock()), ": ", getName(), ": Creation of VM #", vmId,
+                    " failed in Datacenter#", datacenterId-1);
         }
 
         incrementVmsAcks();
@@ -266,7 +270,7 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
                 if (getVmsCreatedList().size() > 0) { // if some vm were created
                     submitCloudlets();
                 } else { // no vms created. abort
-                    Log.printLine(CloudSim.clock() + ": " + getName()
+                    Log.printLine(df.format(CloudSim.clock()) + ": " + getName()
                             + ": none of the required VMs could be created. Aborting");
                     finishExecution();
                 }
@@ -294,7 +298,7 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
                 vm = VmList.getById(getVmsCreatedList(), cloudlet.getVmId());
                 if (vm == null) { // vm was not created
                     if(!Log.isDisabled()) {
-                        Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Postponing execution of Cloudlet ",
+                        Log.printConcatLine(df.format(CloudSim.clock()), ": ", getName(), ": Postponing execution of Cloudlet ",
                                 cloudlet.getCloudletId(), ": bound VM not available");
                     }
                     continue;
@@ -302,7 +306,7 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
             }
 
             if (!Log.isDisabled()) {
-                Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Sending Cloudlet ",
+                Log.printConcatLine(df.format(CloudSim.clock()), ": ", getName(), ": Sending Cloudlet ",
                         cloudlet.getCloudletId(), " to VM #", vm.getId());
             }
 
@@ -332,7 +336,7 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
                 vm = VmList.getById(getVmsCreatedList(), cloudlet.getVmId());
                 if (vm == null) { // vm was not created
                     if(!Log.isDisabled()) {
-                        Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Postponing execution of Data Cloudlet ",
+                        Log.printConcatLine(df.format(CloudSim.clock()), ": ", getName(), ": Postponing execution of Data Cloudlet ",
                                 cloudlet.getCloudletId(), ": bound VM not available");
                     }
                     continue;
@@ -340,7 +344,7 @@ public class HdfsDatacenterBroker extends DatacenterBroker {
             }
 
             if (!Log.isDisabled()) {
-                Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Sending Data Cloudlet ",
+                Log.printConcatLine(df.format(CloudSim.clock()), ": ", getName(), ": Sending Data Cloudlet ",
                         cloudlet.getCloudletId(), " to VM #", vm.getId());
             }
 

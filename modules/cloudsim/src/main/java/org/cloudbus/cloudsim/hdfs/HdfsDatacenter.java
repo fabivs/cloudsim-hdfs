@@ -551,9 +551,9 @@ public class HdfsDatacenter extends Datacenter {
         }
 
         if (time == 0.0){
-            Log.printLine(getName() + ".writeAndPredictTime(): " + "Couldn't add the file to any storage unit.");
+            Log.printLine(CloudSim.clock() + ": " + getName() + ": Couldn't add the file to any storage unit.");
         } else {
-            Log.printLine(getName() + ".writeAndPredictTime(): " + "Successfully added file as " + hdfsBlock.getName()
+            Log.printLine(CloudSim.clock() + ": " + getName() + ": Successfully added file as " + hdfsBlock.getName()
             + " inside drive " + tempStorage.getName());
         }
 

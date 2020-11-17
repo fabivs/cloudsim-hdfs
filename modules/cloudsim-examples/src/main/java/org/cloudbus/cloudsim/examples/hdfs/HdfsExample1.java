@@ -84,9 +84,9 @@ public class HdfsExample1 {
 			datacenterList =  new ArrayList<HdfsDatacenter>();
 
 			// Client datacenter
-			HdfsDatacenter datacenter0 = createDatacenter("Datacenter_0", datacenterParametersClient);
+			HdfsDatacenter datacenter0 = createDatacenter("Datacenter#1", datacenterParametersClient);
 			// Data Nodes datacenter (the starting Cloudlet ID needs to be different)
-			HdfsDatacenter datacenter1 = createDatacenterDataNodes("Datacenter_1", 0, datacenterParameters);
+			HdfsDatacenter datacenter1 = createDatacenterDataNodes("Datacenter#2", 0, datacenterParameters);
 
 
 			// Third step: Create Brokers

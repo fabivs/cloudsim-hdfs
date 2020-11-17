@@ -111,7 +111,7 @@ public class NameNode extends SimEntity {
         int currentClientId = data[0];
         int currentBrokerId = data[1];
 
-        Log.printLine(getName() + ": Received client VM of ID " + currentClientId + ", belonging to broker " + currentBrokerId);
+        Log.printLine(CloudSim.clock() + ": " + getName() + ": Received client VM of ID " + currentClientId + ", belonging to broker " + currentBrokerId);
 
 
         this.clientList.add(currentClientId);
@@ -130,7 +130,7 @@ public class NameNode extends SimEntity {
         int currentRackid = data[2];
         int currentStorageCapacity = data[3];
 
-        Log.printLine(getName() + ": Received DataNode VM of ID " + currentDataNodeId + ", in Datacenter " + currentDatacenterId);
+        Log.printLine(CloudSim.clock() + ": " + getName() + ": Received DataNode VM of ID " + currentDataNodeId + ", in Datacenter " + currentDatacenterId);
 
         // Aggiungiamo il nodo alla lista di DataNodes
         this.dataNodeList.add(currentDataNodeId);
@@ -166,7 +166,7 @@ public class NameNode extends SimEntity {
         int blockSize = Integer.parseInt(data.get(2));  // blocksize in MB
         int clientBrokerId = Integer.parseInt(data.get(3));  // ID della client VM che invia
 
-        Log.printLine("NameNode ha ricevuto una richiesta di scrittura, nome del file: " + fileName + ", repliche: " + replicasNumber + ", block size: " + blockSize + ", da parte del client: " + clientBrokerId);
+        Log.printLine(CloudSim.clock() + ": NameNode: received a write request, file name: " + fileName + ", replicas: " + replicasNumber + ", block size: " + blockSize + ", from client: " + clientBrokerId);
 
         // nel caso sia undefined, allora il numero di replicas è quello standard del NameNode
         if (replicasNumber == 0) {
@@ -193,7 +193,7 @@ public class NameNode extends SimEntity {
         }
 
         if (acceptableDestinations.isEmpty()){
-            Log.print("No suitable nodes were found to write the block to!");
+            Log.print(CloudSim.clock() + ": No suitable nodes were found to write the block to!");
             return;
         }
 

@@ -8,6 +8,7 @@
 
 package org.cloudbus.cloudsim;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -74,6 +75,9 @@ public class DatacenterBroker extends SimEntity {
 	/** The datacenter characteristics map where each key
          * is a datacenter id and each value is its characteristics.. */
 	protected Map<Integer, DatacenterCharacteristics> datacenterCharacteristicsList;
+
+	// used only to print prettier logs
+	DecimalFormat df = new DecimalFormat("#.###");
 
 	/**
 	 * Created a new DatacenterBroker object.
@@ -274,7 +278,7 @@ public class DatacenterBroker extends SimEntity {
 	protected void processCloudletReturn(SimEvent ev) {
 		Cloudlet cloudlet = (Cloudlet) ev.getData();
 		getCloudletReceivedList().add(cloudlet);
-		Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Cloudlet ", cloudlet.getCloudletId(),
+		Log.printConcatLine(df.format(CloudSim.clock()), ": ", getName(), ": Cloudlet ", cloudlet.getCloudletId(),
 				" received");
 		cloudletsSubmitted--;
 		if (getCloudletList().size() == 0 && cloudletsSubmitted == 0) { // all cloudlets executed
