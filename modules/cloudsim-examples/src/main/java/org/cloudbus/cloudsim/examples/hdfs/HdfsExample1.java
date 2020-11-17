@@ -45,7 +45,7 @@ public class HdfsExample1 {
 		try {
 
 			// First step: Initialize CloudSim
-			int num_user = 5;   // number of cloud users
+			int num_user = 6;   // number of cloud users
 			Calendar calendar = Calendar.getInstance();
 			boolean trace_flag = false;  // means trace events
 
@@ -77,8 +77,8 @@ public class HdfsExample1 {
 			int[] datacenterParameters = new int[]{datacenterPeMips, datacenterPeCount, datacenterHostCount, datacenterHostRam,
 					datacenterHostStorage, datacenterHostBw, datacenterDiskCount, datacenterDiskSize, datacenterHostsPerRack, datacenterBaseRackId};
 
-			int[] datacenterParametersClient = new int[]{datacenterPeMips, datacenterPeCount, datacenterHostCount-8, datacenterHostRam,
-					datacenterHostStorage, datacenterHostBw, datacenterDiskCount-8, datacenterDiskSize, datacenterHostsPerRack, datacenterBaseRackId};
+			int[] datacenterParametersClient = new int[]{datacenterPeMips, datacenterPeCount, 1, datacenterHostRam,
+					datacenterHostStorage, datacenterHostBw, 1, datacenterDiskSize, datacenterHostsPerRack, datacenterBaseRackId};
 
 			// metto i Datacenters in una list per convenience, in particolare per il metodo printStorageList
 			datacenterList =  new ArrayList<HdfsDatacenter>();
@@ -131,8 +131,8 @@ public class HdfsExample1 {
 			broker.submitVmList(vmList);
 
 			// Global broker (delayato)
-			GlobalBroker secondBroker = new GlobalBroker("SecondBroker", 800, 3, nameNode.getId(), datacenter0);
-			GlobalBroker thirdBroker = new GlobalBroker("ThirdBroker", 1600, 6, nameNode.getId(), datacenter0);
+			GlobalBroker secondBroker = new GlobalBroker("SecondBroker", 800, 3, 3, nameNode.getId(), datacenter0);
+			GlobalBroker thirdBroker = new GlobalBroker("ThirdBroker", 1600, 6, 5, nameNode.getId(), datacenter0);
 
 			// submit the Data nodes vms to the replication broker
 			List<HdfsVm> dnList = new ArrayList<HdfsVm>();
@@ -392,13 +392,15 @@ public class HdfsExample1 {
 		private int nameNodeId;
 		private int delay;
 		private int baseBlockIndex;
+		private int replicaNum;
 
-		public GlobalBroker(String name, int delay, int baseBlockIndex, int nameNodeId, HdfsDatacenter clientDatacenter) {
+		public GlobalBroker(String name, int delay, int baseBlockIndex, int replicaNum, int nameNodeId, HdfsDatacenter clientDatacenter) {
 			super(name);
 			this.clientDatacenter = clientDatacenter;
 			this.nameNodeId = nameNodeId;
 			this.delay = delay;
 			this.baseBlockIndex = baseBlockIndex;
+			this.replicaNum = replicaNum;
 		}
 
 		@Override
@@ -486,6 +488,10 @@ public class HdfsExample1 {
 					HdfsCloudlet cloudlet3 = new HdfsCloudlet(id, length, pesNumber, fileSize, outputSize, utilizationModel,
 							utilizationModel, utilizationModel, blockList3, blockSize);
 					cloudlet3.setUserId(broker.getId());
+
+					cloudlet1.setReplicaNum(replicaNum);
+					cloudlet2.setReplicaNum(replicaNum);
+					cloudlet3.setReplicaNum(replicaNum);
 
 					// add the cloudlets to the list
 					cloudletList.add(cloudlet1);
