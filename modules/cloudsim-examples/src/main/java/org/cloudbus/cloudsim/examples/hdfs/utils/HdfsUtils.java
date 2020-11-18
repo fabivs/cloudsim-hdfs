@@ -208,7 +208,7 @@ public final class HdfsUtils {
         Log.printLine("========== STORAGE STATUS ==========");
 
         for (HdfsDatacenter datacenter : list){
-            Log.printLine("Datacenter ID: " + datacenter.getId());
+            Log.printLine("Datacenter ID: " + (datacenter.getId()-1));
 
             for (Storage drive : datacenter.getStorageList()){
                 HarddriveStorage tempDrive = (HarddriveStorage) drive;
