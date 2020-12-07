@@ -67,7 +67,7 @@ public class HdfsExample1 {
 
 			// values for Storage
 			int datacenterDiskCount = 12;		// number of Hard Drives in the Datacenter (non è più usato)
-			int datacenterDiskSize = 100000;	// capacity of each Hard Drive
+			int datacenterDiskSize = 1000000;	// capacity of each Hard Drive
 
 			// values for Racks
 			int datacenterHostsPerRack = 3;		// amount of Hosts in each Rack of the Datacenter

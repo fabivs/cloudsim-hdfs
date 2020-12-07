@@ -213,10 +213,10 @@ public final class HdfsUtils {
             for (Storage drive : datacenter.getStorageList()){
                 HarddriveStorage tempDrive = (HarddriveStorage) drive;
                 HdfsHost tempHost = (HdfsHost) datacenter.getHostList().get(tempDrive.getHostId());
-                Log.printLine("Rack ID : " + tempHost.getRackId());
-                Log.printLine(indent + "Drive:  " + drive.getName() + ", Maximum capacity: " + drive.getCapacity() +
-                        " MB, Used space: " + drive.getCurrentSize() + " MB, Free Space: " + drive.getAvailableSpace() + " MB");
-                Log.printLine(indent + indent + "File list: (Number of stored files: " + drive.getNumStoredFile() + ")");
+                //Log.printLine("Rack ID : " + tempHost.getRackId());
+                Log.printLine(indent + "Rack ID : " + tempHost.getRackId() + ", Drive: " + drive.getName() + ", Maximum capacity: " + drive.getCapacity() +
+                        " MB, Used space: " + drive.getCurrentSize() + " MB, Free Space: " + drive.getAvailableSpace() + " MB" + ", File list:");
+                //Log.printLine(indent + indent + "File list: (Number of stored files: " + drive.getNumStoredFile() + ")");
 
                 for (String fileName : drive.getFileNameList()){
                     Log.printLine(indent + indent + indent + "File: " + fileName);

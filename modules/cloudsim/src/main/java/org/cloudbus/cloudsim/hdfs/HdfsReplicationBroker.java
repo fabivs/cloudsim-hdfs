@@ -192,4 +192,51 @@ public class HdfsReplicationBroker extends HdfsDatacenterBroker {
         getVmList().addAll(list);
         setVmsCreatedList(list);
     }
+
+    @Override
+    protected void processVmCreate(SimEvent ev) {
+        int[] data = (int[]) ev.getData();
+        int datacenterId = data[0];
+        int vmId = data[1];
+        int result = data[2];
+
+        if (result == CloudSimTags.TRUE) {
+            getVmsToDatacentersMap().put(vmId, datacenterId);
+            getVmsCreatedList().add(VmList.getById(getVmList(), vmId));
+            Log.printConcatLine(df.format(CloudSim.clock()), ": ", getName(), ": VM #", vmId,
+                    " has been created in Datacenter#", datacenterId-1, ", Host #",
+                    VmList.getById(getVmsCreatedList(), vmId).getHost().getId());
+        } else {
+            Log.printConcatLine(df.format(CloudSim.clock()), ": ", getName(), ": Creation of VM #", vmId,
+                    " failed in Datacenter#", datacenterId-1);
+        }
+
+        incrementVmsAcks();
+
+        // all the requested VMs have been created
+        if (getVmsCreatedList().size() == getVmList().size() - getVmsDestroyed()) {
+
+            submitCloudlets();
+        } else {
+            // all the acks received, but some VMs were not created
+            if (getVmsRequested() == getVmsAcks()) {
+                // find id of the next datacenter that has not been tried
+                for (int nextDatacenterId : getDatacenterIdsList()) {
+                    if (!getDatacenterRequestedIdsList().contains(nextDatacenterId)) {
+                        createVmsInDatacenter(nextDatacenterId);
+                        return;
+                    }
+                }
+
+                // all datacenters already queried
+                if (getVmsCreatedList().size() > 0) { // if some vm were created
+                    submitCloudlets();
+                } else { // no vms created. abort
+                    Log.printLine(df.format(CloudSim.clock()) + ": " + getName()
+                            + ": none of the required VMs could be created. Aborting");
+                    finishExecution();
+                }
+            }
+        }
+    }
 }

@@ -126,6 +126,11 @@ public class NameNode extends SimEntity {
 
         int[] data = (int[]) ev.getData();
         int currentDataNodeId = data[0];
+
+        if (this.dataNodeList.contains(currentDataNodeId)){
+            return;
+        }
+
         int currentDatacenterId = data[1];
         int currentRackid = data[2];
         int currentStorageCapacity = data[3];
@@ -278,6 +283,11 @@ public class NameNode extends SimEntity {
                     previousNode = chosenNode;
                     destinationIds.add(chosenNode);
                     acceptableDestinations.remove(chosenNode);
+
+                    replicasNumber--;
+                    if (replicasNumber == 0){
+                        break;
+                    }
                 }
             }
 
@@ -327,7 +337,7 @@ public class NameNode extends SimEntity {
             currentNodeStorageAmount = (currentNodeUsage * currentNodeCapacity);
 
             currentNodeUpdatedUsage = (currentNodeStorageAmount + blockSize) / currentNodeCapacity;
-            this.mapDataNodeToUsage.put(currentNode, currentNodeUpdatedUsage);
+            getMapDataNodeToUsage().put(currentNode, currentNodeUpdatedUsage);
         }
     }
 
